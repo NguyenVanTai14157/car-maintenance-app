@@ -1,0 +1,45 @@
+{
+  "name": "car-maintenance-backend",
+  "private": true,
+  "scripts": {
+    "start": "tsx src/main.ts",
+    "dev": "tsx watch src/main.ts",
+    "seed": "tsx src/scripts/seed.ts",
+    "test": "node tests/workflows.cjs",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc -p tsconfig.build.json",
+    "start:prod": "node dist/main.js",
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.cjs\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.cjs\"",
+    "test:realtime": "node tests/realtime.cjs",
+    "test:realtime:ui": "node tests/realtime-ui.cjs",
+    "test:constraints": "node tests/constraints.cjs"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.0.0",
+    "@nestjs/core": "^11.0.0",
+    "@nestjs/platform-express": "^11.0.0",
+    "@nestjs/platform-socket.io": "^11.2.8",
+    "@nestjs/websockets": "^11.2.8",
+    "bcryptjs": "^3.0.2",
+    "dotenv": "^17.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.16.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "socket.io": "^4.8.4"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^26.6.6",
+    "@types/pg": "^8.23.1",
+    "prettier": "^3.9.10",
+    "socket.io-client": "^4.8.4",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  },
+  "overrides": {
+    "multer": "^2.5.0"
+  }
+}

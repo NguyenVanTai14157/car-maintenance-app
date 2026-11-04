@@ -1,0 +1,62 @@
+# Dependencies and generated output
+node_modules/
+dist/
+build/
+web-build/
+coverage/
+.expo/
+.cache/
+*.tsbuildinfo
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# Local configuration; keep only templates
+.env*
+!.env.example
+!.env.sample
+.npmrc
+.yarnrc.yml
+.demo-accounts.md
+
+# Credentials and signing files
+*.pem
+*.key
+*.p8
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.mobileprovision
+credentials.json
+service-account*.json
+google-services.json
+GoogleService-Info.plist
+
+# Local data and screenshots
+/docs/ba-review/
+/docs/test-results/
+uploads/
+backups/
+*.dump
+*.backup
+*.sqlite
+*.sqlite3
+*.db
+
+# Local tooling and preserved nested Git
+.local-backups/
+.claude/
+.codex/
+.agents/
+update-config.cjs
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+
+# Generated native projects
+/mobile/android/
+/mobile/ios/
