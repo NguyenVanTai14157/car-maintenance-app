@@ -54,9 +54,10 @@ export class AuthService {
   async register(body: AuthInput, req: AuthenticatedRequest) {
     this.limit(req);
     const c = contact(body);
+    if (!c.email) fail("Cần email để đăng nhập và khôi phục tài khoản.");
     const name = text(body.name, "Họ tên", 100);
     const digest = await hash(password(body.password), 12);
-    const r = await this.repository.insertCustomer([
+    const r = await this.repository.insertUser([
       name,
       c.email,
       c.phone,
@@ -64,7 +65,11 @@ export class AuthService {
     ]);
     return this.session(r.rows[0]);
   }
-  async login(body: AuthInput, req: AuthenticatedRequest) {
+  async login(
+    body: AuthInput,
+    req: AuthenticatedRequest,
+    expectedRole: "user" | "admin" = "user",
+  ) {
     this.limit(req);
     const identifier = text(
       body.identifier || body.email,
@@ -76,6 +81,7 @@ export class AuthService {
     if (
       !u ||
       !u.active ||
+      u.role !== expectedRole ||
       typeof body.password !== "string" ||
       !(await compare(body.password, u.password_hash))
     )
@@ -93,6 +99,7 @@ export class AuthService {
   }
   async profile(req: AuthenticatedRequest, body: AuthInput) {
     const c = contact(body);
+    if (!c.email) fail("Cần email để khôi phục tài khoản.");
     const avatar = body.avatar ? imageData(body.avatar) : "";
     const r = await this.repository.updateProfile([
       text(body.name, "Họ tên", 100),

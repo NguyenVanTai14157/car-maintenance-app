@@ -1,22 +1,36 @@
+import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
-import {Platform} from 'react-native';
-import Constants from 'expo-constants';
-const developmentHost = Platform.OS==='web' ? globalThis.location?.hostname : Constants.expoConfig?.hostUri?.split(':')[0];
-export const API_URL = process.env.EXPO_PUBLIC_API_URL || `http://${developmentHost || '10.0.2.2'}:3000`;
+import { Platform } from "react-native";
+const developmentHost =
+  Platform.OS === "web"
+    ? globalThis.location?.hostname
+    : Constants.expoConfig?.hostUri?.split(":")[0];
+export const API_URL =
+  process.env.EXPO_PUBLIC_API_URL ||
+  `http://${developmentHost || "10.0.2.2"}:3000`;
 let token: string | null = null;
 let expired: (() => void) | undefined;
 export const getToken = () => token;
-export function expireSession() { expired?.(); }
+export function expireSession() {
+  expired?.();
+}
 export function onExpired(fn: () => void) {
   expired = fn;
 }
 export async function restoreToken() {
-  token = Platform.OS==='web' ? sessionStorage.getItem('autocare.session') : await SecureStore.getItemAsync("autocare.session");
+  token =
+    Platform.OS === "web"
+      ? sessionStorage.getItem("autocare.session")
+      : await SecureStore.getItemAsync("autocare.session");
   return token;
 }
 export async function saveToken(value: string | null) {
   token = value;
-  if(Platform.OS==='web'){if(value)sessionStorage.setItem('autocare.session',value);else sessionStorage.removeItem('autocare.session');return;}
+  if (Platform.OS === "web") {
+    if (value) sessionStorage.setItem("autocare.session", value);
+    else sessionStorage.removeItem("autocare.session");
+    return;
+  }
   if (value) await SecureStore.setItemAsync("autocare.session", value);
   else await SecureStore.deleteItemAsync("autocare.session");
 }

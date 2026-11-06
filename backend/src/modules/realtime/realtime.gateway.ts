@@ -41,7 +41,7 @@ export class RealtimeGateway implements OnGatewayInit, OnApplicationShutdown {
     this.audit = setInterval(() => {
       void this.publish({
         users: [],
-        roles: ["admin", "receptionist", "technician", "customer"],
+        roles: ["user", "admin"],
         resources: [],
       });
     }, 30000);
@@ -83,7 +83,7 @@ export class RealtimeGateway implements OnGatewayInit, OnApplicationShutdown {
       // LISTEN has no replay; resync all connected clients after initial/reconnection.
       await this.publish({
         users: [],
-        roles: ["admin", "receptionist", "technician", "customer"],
+        roles: ["user", "admin"],
         resources: ["*"],
       });
     } catch {

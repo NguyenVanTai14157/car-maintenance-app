@@ -1,3 +1,4 @@
+import { RecoveryService } from "./recovery.service";
 import {
   Body,
   Controller,
@@ -15,6 +16,7 @@ export class AuthController {
   constructor(
     @Inject(AuthService)
     private readonly service: AuthService,
+    @Inject(RecoveryService) private readonly recovery: RecoveryService,
   ) {}
   @Post("register")
   async register(
@@ -65,5 +67,17 @@ export class AuthController {
     body: AuthInput,
   ) {
     return this.service.changePassword(req, body);
+  }
+  @Post("forgot-password") forgot(
+    @Req() r: AuthenticatedRequest,
+    @Body() b: any,
+  ) {
+    return this.recovery.forgot(r.ip || "unknown", b);
+  }
+  @Post("reset-password") reset(
+    @Req() r: AuthenticatedRequest,
+    @Body() b: any,
+  ) {
+    return this.recovery.reset(r.ip || "unknown", b);
   }
 }

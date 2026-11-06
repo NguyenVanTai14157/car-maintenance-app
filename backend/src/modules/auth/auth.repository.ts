@@ -22,7 +22,7 @@ export class AuthRepository {
       params,
     );
   }
-  insertCustomer(params: any[] = [], client?: PoolClient) {
+  insertUser(params: any[] = [], client?: PoolClient) {
     return (client || this.database).query(
       "INSERT INTO users(name,email,phone,password_hash) VALUES($1,$2,$3,$4) RETURNING *",
       params,

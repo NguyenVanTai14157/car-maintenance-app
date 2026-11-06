@@ -18,7 +18,8 @@ export class ApiExceptionFilter implements ExceptionFilter {
     }
     if (error.code === "23505")
       return res.status(409).json({
-        message: "Thông tin đã tồn tại (email, SĐT, biển số hoặc đánh giá).",
+        message:
+          "Thông tin đã tồn tại (email, SĐT, biển số hoặc tên hạng mục).",
       });
     if (["23503", "22P02", "23514"].includes(error.code))
       return res

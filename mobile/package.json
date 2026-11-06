@@ -5,11 +5,14 @@
   "dependencies": {
     "expo": "~58.0.22",
     "expo-constants": "~58.0.14",
+    "expo-document-picker": "~58.0.4",
+    "expo-file-system": "~58.0.13",
     "expo-image-picker": "~58.0.10",
     "expo-linking": "~58.0.15",
     "expo-notifications": "~58.1.7",
     "expo-router": "~58.0.29",
     "expo-secure-store": "~58.0.2",
+    "expo-sharing": "~58.0.22",
     "expo-status-bar": "~58.0.4",
     "react": "19.3.0",
     "react-dom": "19.3.0",
@@ -32,7 +35,9 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "test:ui": "node tests/personal-ui.cjs",
+    "test:notifications": "node tests/notification-channel.cjs"
   },
   "private": true
 }

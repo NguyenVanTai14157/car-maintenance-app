@@ -1,99 +1,134 @@
-import React, { useState } from "react";
-import { router } from "expo-router";
+import { useState } from "react";
 import {
-  Screen,
-  Card,
-  Heading,
-  Field,
   Button,
+  Card,
+  confirm,
   Feedback,
-  useSubmit,
+  Field,
+  Heading,
   Photo,
   pickPhoto,
-  roles,
-  confirm,
+  Screen,
+  useSubmit,
 } from "../components/ui";
 import { useSession } from "../hooks/session";
 import { api } from "../services/api";
 export default function Profile() {
   const { user, setUser, logout } = useSession();
-  const [form, F] = useState<any>(null),
-    [current, C] = useState(""),
-    [password, P] = useState("");
-  const v = form || user || {};
-  const task = useSubmit();
   return (
-    <Screen title="Hồ sơ của tôi" subtitle={roles[user?.role]}>
+    <Screen title="Tài khoản cá nhân">
+      {user && (
+        <ProfileForm
+          key={user.id}
+          user={user}
+          setUser={setUser}
+          logout={logout}
+        />
+      )}
+    </Screen>
+  );
+}
+function ProfileForm({ user, setUser, logout }: any) {
+  const [name, N] = useState(user.name),
+    [email, E] = useState(user.email),
+    [phone, P] = useState(user.phone || ""),
+    [avatar, A] = useState(user.avatar || ""),
+    [current, C] = useState(""),
+    [password, W] = useState("");
+  const info = useSubmit(),
+    security = useSubmit(),
+    exit = useSubmit();
+  const busy = info.busy || security.busy || exit.busy;
+  return (
+    <>
       <Card>
-        {v.avatar && <Photo uri={v.avatar} />}
+        <Heading>Thông tin cá nhân</Heading>
+        {!!avatar && <Photo uri={avatar} />}
         <Button
           title="Chọn ảnh đại diện"
           secondary
-          disabled={task.busy}
+          disabled={busy}
           onPress={() =>
-            task.run(async () => {
-              const avatar = await pickPhoto();
-              if (avatar) F({ ...v, avatar });
-            }, "Ảnh sẽ được lưu khi bạn bấm Lưu hồ sơ.")
+            info.run(async () => {
+              const image = await pickPhoto();
+              if (image) A(image);
+            }, "")
           }
         />
-        {[
-          ["name", "Họ tên"],
-          ["email", "Email"],
-          ["phone", "Số điện thoại"],
-        ].map(([key, label]) => (
-          <Field
-            key={key}
-            label={label}
-            value={v[key]}
-            email={key === "email"}
-            onChange={(value) => F({ ...v, [key]: value })}
-          />
-        ))}
+        <Field
+          label="Họ và tên"
+          placeholder="Ví dụ: Nguyễn Văn An"
+          value={name}
+          onChange={N}
+        />
+        <Field
+          label="Email"
+          placeholder="Ví dụ: ban@example.com"
+          value={email}
+          onChange={E}
+          email
+        />
+        <Field
+          label="Số điện thoại (không bắt buộc)"
+          placeholder="Ví dụ: 0901234567"
+          value={phone}
+          onChange={P}
+        />
         <Button
-          title="Lưu hồ sơ"
-          disabled={task.busy}
+          title="Lưu thông tin"
+          disabled={busy}
           onPress={() =>
-            task.run(async () => {
-              const saved = await api("/auth/me", "PATCH", v);
-              setUser(saved);
-              F(null);
-            })
+            info.run(async () =>
+              setUser(
+                await api("/auth/me", "PATCH", { name, email, phone, avatar }),
+              ),
+            )
           }
         />
+        <Feedback task={info} />
       </Card>
       <Card>
         <Heading>Đổi mật khẩu</Heading>
-        <Field label="Mật khẩu hiện tại" value={current} onChange={C} secret />
-        <Field label="Mật khẩu mới" value={password} onChange={P} secret />
+        <Field
+          label="Mật khẩu hiện tại"
+          placeholder="Nhập mật khẩu đang sử dụng"
+          value={current}
+          onChange={C}
+          secret
+        />
+        <Field
+          label="Mật khẩu mới"
+          placeholder="Ít nhất 8 ký tự"
+          value={password}
+          onChange={W}
+          secret
+        />
         <Button
           title="Đổi mật khẩu"
-          disabled={task.busy}
+          secondary
+          disabled={busy}
           onPress={() =>
-            task.run(async () => {
+            security.run(async () => {
               await api("/auth/password", "POST", { current, password });
               C("");
-              P("");
-            })
+              W("");
+            }, "Đã đổi mật khẩu, các phiên khác đã kết thúc.")
           }
         />
+        <Feedback task={security} />
       </Card>
-      <Feedback task={task} />
+      <Feedback task={exit} />
       <Button
         title="Đăng xuất"
         danger
-        disabled={task.busy}
+        disabled={busy}
         onPress={() =>
           confirm(
-            "Đăng xuất khỏi tài khoản?",
-            () =>
-              void task.run(async () => {
-                await logout();
-                router.replace("/login");
-              }, ""),
+            "Đăng xuất khỏi thiết bị này?",
+            () => void exit.run(logout, ""),
           )
         }
       />
-    </Screen>
+    </>
   );
 }

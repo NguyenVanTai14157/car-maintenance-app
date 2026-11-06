@@ -1,117 +1,224 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import { Alert, Platform } from "react-native";
 import {
-  Screen,
-  Card,
-  Heading,
   Body,
-  Field,
   Button,
-  Feedback,
-  useSubmit,
-  ErrorText,
+  Card,
+  Chips,
+  confirm,
   Empty,
+  ErrorText,
+  Feedback,
+  Field,
   go,
+  Heading,
+  Photo,
+  pickPhoto,
+  Screen,
+  useSubmit,
 } from "../components/ui";
 import { useData } from "../hooks/data";
-import { useSession } from "../hooks/session";
 import { api } from "../services/api";
-const fresh = {
-  plate: "",
-  brand: "",
-  model: "",
-  year: String(new Date().getFullYear()),
-  odometer: "0",
-};
 export default function Vehicles() {
-  const q = useData("/vehicles"),
-    { user } = useSession(),
-    task = useSubmit();
-  const [form, F] = useState<any>(null),
-    [search, S] = useState("");
+  const q = useData("/vehicles");
+  const [archived, A] = useState(false),
+    [edit, E] = useState<any>(undefined),
+    [savedId, setSavedId] = useState<number | null>(null);
   return (
-    <Screen
-      title={user?.role === "customer" ? "Xe của tôi" : "Tra cứu phương tiện"}
-      allowed={["customer", "admin", "receptionist"]}
-      refresh={q.reload}
-    >
+    <Screen title="Xe của tôi" refresh={q.reload}>
       <ErrorText text={q.error} />
-      <Field
-        label="Tìm biển số, hãng hoặc chủ xe"
-        value={search}
-        onChange={S}
+      <Button
+        title="Thêm xe"
+        onPress={() => {
+          setSavedId(null);
+          E(null);
+        }}
       />
-      {user?.role === "customer" && (
-        <Button title="＋ Thêm xe" onPress={() => F({ ...fresh })} />
-      )}
-      <Feedback task={task} />
-      {form && (
-        <Card>
-          <Heading>{form.id ? "Cập nhật xe" : "Thêm xe mới"}</Heading>
-          {[
-            ["plate", "Biển số"],
-            ["brand", "Hãng xe"],
-            ["model", "Dòng xe"],
-            ["year", "Năm sản xuất"],
-            ["odometer", "Số km hiện tại"],
-          ].map(([key, label]) => (
-            <Field
-              key={key}
-              label={label}
-              value={form[key]}
-              onChange={(v) => F({ ...form, [key]: v })}
-              numeric={["year", "odometer"].includes(key)}
-            />
-          ))}
-          <Button
-            title="Lưu xe"
-            disabled={task.busy}
-            onPress={() =>
-              task.run(async () => {
-                await api(
-                  "/vehicles" + (form.id ? "/" + form.id : ""),
-                  form.id ? "PATCH" : "POST",
-                  form,
-                );
-                F(null);
-                await q.reload();
-              })
-            }
-          />
-          <Button title="Đóng" secondary onPress={() => F(null)} />
-        </Card>
+      <Chips
+        value={archived}
+        onChange={A}
+        options={[
+          { label: "Đang sử dụng", value: false },
+          { label: "Đã lưu trữ", value: true },
+        ]}
+      />
+      {edit !== undefined && (
+        <VehicleForm
+          key={edit?.id || "new"}
+          initial={edit}
+          close={() => E(undefined)}
+          saved={async (vehicle: any, updating: boolean) => {
+            E(undefined);
+            A(vehicle.archived);
+            setSavedId(vehicle.id);
+            const title = updating
+              ? "Đã cập nhật xe thành công"
+              : "Đã thêm xe thành công";
+            const message = `${vehicle.brand} ${vehicle.model}${vehicle.plate ? " · " + vehicle.plate : ""}\nThông tin xe đã được lưu vào tài khoản của bạn.`;
+            if (Platform.OS === "web") window.alert(title + "\n" + message);
+            else Alert.alert(title, message, [{ text: "Đã hiểu" }]);
+            await q.reload();
+          }}
+        />
       )}
       {(q.data || [])
-        .filter((v: any) =>
-          `${v.plate} ${v.brand} ${v.model} ${v.owner_name}`
-            .toLowerCase()
-            .includes(search.toLowerCase()),
-        )
+        .filter((v: any) => v.archived === archived)
         .map((v: any) => (
-          <Card key={v.id}>
-            <Heading>{v.plate}</Heading>
-            <Body>
-              {v.brand} {v.model} · {v.year}
-            </Body>
-            <Body>
-              {Number(v.odometer).toLocaleString("vi-VN")} km · {v.owner_name}
-            </Body>
-            {user?.role === "customer" && (
-              <Button
-                title="Cập nhật thông tin / số km"
-                secondary
-                onPress={() => F({ ...v })}
-              />
-            )}
-            <Button
-              title="Lịch sử bảo dưỡng của xe"
-              secondary
-              onPress={() => go("/appointments?vehicle=" + v.id)}
-            />
-          </Card>
+          <VehicleCard
+            key={v.id}
+            vehicle={v}
+            justSaved={v.id === savedId}
+            edit={() => {
+              setSavedId(null);
+              E(v);
+            }}
+            reload={q.reload}
+          />
         ))}
-      {q.data?.length === 0 && (
-        <Empty text="Chưa có xe. Thêm chiếc xe đầu tiên để đặt lịch." />
+      {q.data && !q.data.filter((v: any) => v.archived === archived).length && (
+        <Empty text="Chưa có xe trong danh sách này." />
       )}
     </Screen>
+  );
+}
+function VehicleCard({ vehicle: v, justSaved, edit, reload }: any) {
+  const task = useSubmit();
+  return (
+    <Card>
+      {justSaved && <Body>✓ Thông tin xe đã được lưu</Body>}
+      <Heading>Thông tin xe</Heading>
+      <Body>Hãng xe: {v.brand}</Body>
+      <Body>Dòng xe: {v.model}</Body>
+      <Body>Biển số: {v.plate || "Chưa cung cấp"}</Body>
+      <Body>Năm sản xuất: {v.year || "Chưa cung cấp"}</Body>
+      <Body>Số km hiện tại: {v.odometer.toLocaleString("vi-VN")} km</Body>
+      <Body>Ghi chú: {v.notes || "Không có ghi chú"}</Body>
+      {!!v.image && (
+        <>
+          <Body>Ảnh xe:</Body>
+          <Photo uri={v.image} />
+        </>
+      )}
+      <Button title="Sửa / cập nhật số km" secondary onPress={edit} />
+      <Button
+        title="Xem lịch bảo dưỡng"
+        secondary
+        onPress={() => go("/plans?vehicle=" + v.id)}
+      />
+      <Button
+        title="Xem lịch sử"
+        secondary
+        onPress={() => go("/records?vehicle=" + v.id)}
+      />
+      <Button
+        title={v.archived ? "Khôi phục xe" : "Lưu trữ xe"}
+        secondary
+        disabled={task.busy}
+        onPress={() =>
+          confirm(
+            v.archived
+              ? "Khôi phục xe?"
+              : "Lưu trữ xe và dừng nhắc lịch? Lịch sử vẫn được giữ.",
+            () =>
+              void task.run(async () => {
+                await api("/vehicles/" + v.id + "/archive", "POST", {
+                  archived: !v.archived,
+                });
+                await reload();
+              }),
+          )
+        }
+      />
+      <Button
+        title="Xóa xe chưa có dữ liệu"
+        danger
+        disabled={task.busy}
+        onPress={() =>
+          confirm(
+            "Xóa xe? Xe có lịch/lịch sử cần dùng Lưu trữ thay thế.",
+            () =>
+              void task.run(async () => {
+                await api("/vehicles/" + v.id, "DELETE");
+                await reload();
+              }),
+          )
+        }
+      />
+      <Feedback task={task} />
+    </Card>
+  );
+}
+function VehicleForm({ initial, saved, close }: any) {
+  const [b, B] = useState<any>(
+    initial || {
+      brand: "",
+      model: "",
+      plate: "",
+      year: "",
+      odometer: "",
+      notes: "",
+      image: "",
+    },
+  );
+  const task = useSubmit();
+  const examples: Record<string, string> = {
+    brand: "Ví dụ: Toyota, Hyundai, Honda",
+    model: "Ví dụ: Vios, Accent, City",
+    plate: "Ví dụ: 51A-123.45",
+    year: "Ví dụ: 2022",
+    odometer: "Ví dụ: 35000 (km)",
+    notes: "Ví dụ: Xe gia đình, thường đi trong thành phố",
+  };
+  const field = (key: string, label: string, numeric = false) => (
+    <Field
+      label={label}
+      placeholder={examples[key]}
+      value={b[key]}
+      onChange={(v) => B({ ...b, [key]: v })}
+      numeric={numeric}
+    />
+  );
+  return (
+    <Card>
+      <Heading>{initial ? "Chỉnh sửa xe" : "Thêm phương tiện"}</Heading>
+      {field("brand", "Hãng xe")}
+      {field("model", "Dòng xe")}
+      {field("plate", "Biển số (không bắt buộc)")}
+      {field("year", "Năm sản xuất (không bắt buộc)", true)}
+      {field("odometer", "Số km hiện tại", true)}
+      {field("notes", "Ghi chú")}
+      {!!b.image && <Photo uri={b.image} />}
+      <Button
+        title="Chọn ảnh xe"
+        secondary
+        onPress={() =>
+          task.run(async () => {
+            const image = await pickPhoto();
+            if (image) B({ ...b, image });
+          }, "")
+        }
+      />
+      <Feedback task={task} />
+      <Button
+        title={task.busy ? "Đang lưu…" : "Lưu xe"}
+        disabled={task.busy}
+        onPress={() =>
+          task.run(async () => {
+            const vehicle = await api(
+              "/vehicles" + (initial ? "/" + initial.id : ""),
+              initial ? "PATCH" : "POST",
+              b,
+            );
+            await saved(vehicle, !!initial);
+          }, "")
+        }
+      />
+      <Button
+        title="Đóng biểu mẫu"
+        secondary
+        disabled={task.busy}
+        onPress={close}
+      />
+    </Card>
   );
 }

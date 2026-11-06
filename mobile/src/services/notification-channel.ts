@@ -10,10 +10,18 @@ export async function prepareReminderChannel(
     await create();
     return "maintenance";
   } catch (error) {
-    const message = error && typeof error === 'object' && 'message' in error
-      ? String(error.message) : String(error);
-    if (expoGo && message.includes("setNotificationChannelAsync") &&
-        message.includes("NullPointerException")) return undefined;
-    throw new Error("Không tạo được kênh nhắc lịch. Hãy thử lại sau khi mở lại ứng dụng.");
+    const message =
+      error && typeof error === "object" && "message" in error
+        ? String(error.message)
+        : String(error);
+    if (
+      expoGo &&
+      message.includes("setNotificationChannelAsync") &&
+      message.includes("NullPointerException")
+    )
+      return undefined;
+    throw new Error(
+      "Không tạo được kênh nhắc lịch. Hãy thử lại sau khi mở lại ứng dụng.",
+    );
   }
 }

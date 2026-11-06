@@ -1,26 +1,25 @@
-import React from "react";
 import {
-  Screen,
-  Card,
-  Heading,
   Body,
   Button,
-  ErrorText,
-  Empty,
+  Card,
   date,
-  go,
+  Empty,
+  ErrorText,
   Feedback,
+  go,
+  Heading,
+  Screen,
   useSubmit,
 } from "../components/ui";
 import { useData } from "../hooks/data";
 import { api } from "../services/api";
-export default function Notifications() {
+export default function Notices() {
   const q = useData("/notifications"),
     task = useSubmit();
   return (
     <Screen
-      title="Thông báo"
-      subtitle="Lịch hẹn, tiến độ và nhắc lịch được cập nhật trực tiếp khi có kết nối."
+      title="Thông báo nhắc lịch"
+      subtitle="Theo ngày, theo km hoặc cả hai. Km dựa trên lần cập nhật gần nhất của bạn."
       refresh={q.reload}
     >
       <ErrorText text={q.error} />
@@ -28,6 +27,7 @@ export default function Notifications() {
       <Button
         title="Đánh dấu tất cả đã đọc"
         secondary
+        disabled={task.busy}
         onPress={() =>
           task.run(async () => {
             await api("/notifications/read", "POST");
@@ -42,16 +42,16 @@ export default function Notifications() {
             {n.message}
           </Heading>
           <Body>{date(n.created_at)}</Body>
-          {n.appointment_id && (
+          {n.plan_id && (
             <Button
-              secondary
               title="Xem lịch liên quan"
-              onPress={() => go("/appointment?id=" + n.appointment_id)}
+              secondary
+              onPress={() => go("/plan?id=" + n.plan_id)}
             />
           )}
         </Card>
       ))}
-      {q.data?.length === 0 && <Empty text="Chưa có thông báo." />}
+      {q.data && !q.data.length && <Empty text="Chưa có thông báo." />}
     </Screen>
   );
 }

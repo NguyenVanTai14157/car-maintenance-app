@@ -1,22 +1,50 @@
-import { clearReminders } from "../services/reminders";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { api, onExpired, restoreToken, saveToken } from "../services/api";
-import {startRealtime,subscribeChanges} from '../services/realtime';
+import { startRealtime, subscribeChanges } from "../services/realtime";
+import { clearReminders, syncPersonalReminders } from "../services/reminders";
 const Context = createContext<any>(null);
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null),
     [loading, setLoading] = useState(true),
     [startupError, setStartupError] = useState("");
   const userId = user?.id;
-  useEffect(()=>{
-    if(!userId)return;
-    const stop=startRealtime();
-    let active=true;
-    const unsubscribe=subscribeChanges(resources=>{
-      if(resources.includes('profile'))void api('/auth/me').then(next=>{if(active)setUser(next);}).catch(()=>{});
+  useEffect(() => {
+    if (!userId) return;
+    const stop = startRealtime();
+    let active = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const sync = () => {
+      void Promise.all([api("/plans"), api("/settings")])
+        .then(([plans, settings]) => {
+          if (active)
+            void syncPersonalReminders(plans, settings, userId).catch(() => {});
+        })
+        .catch(() => {});
+    };
+    sync();
+    const unsubscribe = subscribeChanges((resources) => {
+      if (resources.includes("profile") || resources.includes("*"))
+        void api("/auth/me")
+          .then((next) => {
+            if (active) setUser(next);
+          })
+          .catch(() => {});
+      if (
+        resources.some((r) =>
+          ["*", "plans", "vehicles", "records", "settings"].includes(r),
+        )
+      ) {
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(sync, 150);
+      }
     });
-    return()=>{active=false;unsubscribe();stop();};
-  },[userId]);
+    return () => {
+      active = false;
+      if (timer) clearTimeout(timer);
+      unsubscribe();
+      stop();
+    };
+  }, [userId]);
   async function restore() {
     try {
       if (await restoreToken()) setUser(await api("/auth/me"));
@@ -33,9 +61,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       void clearReminders().catch(() => {});
     });
     restoreToken()
-      .then(async saved => { if(saved) setUser(await api('/auth/me')); })
-      .catch(error => setStartupError(error.message))
-      .finally(()=>setLoading(false));
+      .then(async (saved) => {
+        if (saved) setUser(await api("/auth/me"));
+      })
+      .catch((error) => setStartupError(error.message))
+      .finally(() => setLoading(false));
   }, []);
   async function login(result: any) {
     await saveToken(result.accessToken);

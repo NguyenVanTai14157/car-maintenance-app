@@ -1,21 +1,21 @@
+import * as ImagePicker from "expo-image-picker";
+import { Redirect, router } from "expo-router";
 import React, { useState } from "react";
 import {
-  Text,
-  View,
-  TextInput,
-  Pressable,
-  ScrollView,
-  StyleSheet,
   ActivityIndicator,
+  Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   RefreshControl,
-  Image,
-  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router, Redirect } from "expo-router";
-import * as ImagePicker from "expo-image-picker";
 import { useSession } from "../hooks/session";
 export const colors = {
   ink: "#173F35",
@@ -25,24 +25,14 @@ export const colors = {
   line: "#DBE6DF",
   lime: "#D7E9AA",
 };
-export const roles: any = {
-  customer: "Khách hàng",
-  receptionist: "Tiếp nhận",
-  technician: "Kỹ thuật viên",
-  admin: "Quản trị viên",
-};
+export const roles: any = { user: "Người dùng cá nhân" };
 export const statuses: any = {
-  pending: "Chờ xác nhận",
-  confirmed: "Đã xác nhận",
-  reschedule_proposed: "Đề xuất đổi giờ",
-  received: "Đã tiếp nhận xe",
-  assigned: "Đã phân công",
-  accepted: "Đã nhận việc",
-  in_progress: "Đang bảo dưỡng",
-  ready: "Sẵn sàng bàn giao",
-  completed: "Đã bàn giao",
+  planned: "Chưa đến hạn",
+  soon: "Sắp đến hạn",
+  due: "Đến hạn",
+  overdue: "Quá hạn",
+  completed: "Hoàn thành",
   cancelled: "Đã hủy",
-  rejected: "Từ chối",
 };
 export const money = (n: any) => Number(n || 0).toLocaleString("vi-VN") + " ₫";
 export const date = (v: any) =>
@@ -65,12 +55,14 @@ export function Screen({
   children,
   refresh,
   allowed,
+  showBack = true,
 }: {
   title: string;
   subtitle?: string;
   children: React.ReactNode;
   refresh?: () => void;
   allowed?: string[];
+  showBack?: boolean;
 }) {
   const { user, loading } = useSession();
   if (loading) return <ActivityIndicator style={{ flex: 1 }} />;
@@ -86,14 +78,19 @@ export function Screen({
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <View style={s.header}>
-          <Pressable
-            onPress={() =>
-              router.canGoBack() ? router.back() : router.replace("/home")
-            }
-            accessibilityLabel="Quay lại"
-          >
-            <Text style={s.back}>‹</Text>
-          </Pressable>
+          {showBack ? (
+            <Pressable
+              onPress={() =>
+                router.canGoBack() ? router.back() : router.replace("/home")
+              }
+              accessibilityLabel="Quay lại"
+              accessibilityRole="button"
+            >
+              <Text style={s.back}>‹</Text>
+            </Pressable>
+          ) : (
+            <View style={{ width: 20 }} />
+          )}
           <Pressable onPress={() => router.replace("/home")}>
             <Text style={s.brand}>↗ AutoCare</Text>
           </Pressable>
@@ -335,8 +332,9 @@ export async function pickMaintenancePhotos(camera = false): Promise<string[]> {
     quality: 0.35,
   });
   if (result.canceled) return [];
-  return result.assets.map(asset => {
-    if (!asset.base64) throw new Error("Không đọc được ảnh. Vui lòng chọn lại.");
+  return result.assets.map((asset) => {
+    if (!asset.base64)
+      throw new Error("Không đọc được ảnh. Vui lòng chọn lại.");
     if (asset.base64.length > 2800000)
       throw new Error("Ảnh quá lớn. Vui lòng chọn ảnh có dung lượng nhỏ hơn.");
     return `data:image/jpeg;base64,${asset.base64}`;
@@ -352,7 +350,10 @@ export function Photo({ uri }: { uri: string }) {
   );
 }
 export function confirm(title: string, action: () => void) {
-  if(Platform.OS==='web'){if(globalThis.confirm(title))action();return;}
+  if (Platform.OS === "web") {
+    if (globalThis.confirm(title)) action();
+    return;
+  }
   Alert.alert("Xác nhận", title, [
     { text: "Quay lại", style: "cancel" },
     { text: "Đồng ý", onPress: action },

@@ -5,21 +5,58 @@
       "label": "AutoCare: Mobile (QR Expo)",
       "type": "shell",
       "command": "npm.cmd",
-      "args": ["start", "--", "--lan"],
-      "options": { "cwd": "${workspaceFolder}/mobile" },
+      "args": [
+        "start",
+        "--",
+        "--lan"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/mobile"
+      },
       "isBackground": true,
       "problemMatcher": [],
-      "presentation": { "reveal": "always", "panel": "dedicated", "focus": true, "clear": true }
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": true,
+        "clear": true
+      }
     },
     {
       "label": "AutoCare: Backend",
       "type": "shell",
       "command": "npm.cmd",
-      "args": ["run", "dev"],
-      "options": { "cwd": "${workspaceFolder}/backend" },
+      "args": [
+        "run",
+        "dev"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/backend"
+      },
       "isBackground": true,
       "problemMatcher": [],
-      "presentation": { "reveal": "always", "panel": "dedicated" }
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "AutoCare: Admin Web (Next.js)",
+      "type": "shell",
+      "command": "npm.cmd",
+      "args": [
+        "run",
+        "dev"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/admin-web"
+      },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
     }
   ]
 }

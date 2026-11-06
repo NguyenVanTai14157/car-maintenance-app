@@ -1,5 +1,5 @@
 import type { Request } from "express";
-export type Role = "admin" | "receptionist" | "technician" | "customer";
+export type Role = "user" | "admin";
 export interface AuthenticatedRequest extends Request {
   user: {
     id: number;

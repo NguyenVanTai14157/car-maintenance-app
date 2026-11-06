@@ -1,132 +1,87 @@
-import React, { useEffect } from "react";
-import { syncReminders, enableReminders } from "../services/reminders";
-import { View, Text, Pressable } from "react-native";
+import { View } from "react-native";
+import { dayLabel, PlanCard } from "../components/personal";
 import {
-  Screen,
-  Card,
   Body,
-  Heading,
-  go,
-  s,
-  roles,
-  Badge,
-  date,
-  ErrorText,
   Button,
-  Feedback,
-  useSubmit,
+  Card,
+  Empty,
+  ErrorText,
+  go,
+  Heading,
+  money,
+  s,
+  Screen,
 } from "../components/ui";
-import { useSession } from "../hooks/session";
 import { useData } from "../hooks/data";
-import {useRealtimeConnected} from '../services/realtime';
 export default function Home() {
-  const connected=useRealtimeConnected();
-  const { user } = useSession();
-  const q = useData("/appointments");
-  const list = q.data || [];
-  const task = useSubmit();
-  useEffect(() => {
-    if (user?.role === "customer" && q.data)
-      void syncReminders(q.data, user.id).catch(() => {});
-  }, [q.data, user]);
-  const active = list.filter(
-    (a: any) => !["completed", "cancelled", "rejected"].includes(a.status),
-  );
-  const menu: any = {
-    customer: [
-      ["🚘", "Xe của tôi", "/vehicles"],
-      ["＋", "Đặt lịch", "/book"],
-      ["▤", "Dịch vụ & giá", "/services"],
-      ["◷", "Lịch hẹn & lịch sử", "/appointments"],
-    ],
-    receptionist: [
-      ["◷", "Lịch hẹn / tiếp nhận", "/appointments"],
-      ["🚘", "Tra cứu xe", "/vehicles"],
-      ["▤", "Dịch vụ", "/services"],
-      ["↗", "Tổng quan", "/reports"],
-    ],
-    technician: [["🔧", "Công việc của tôi", "/appointments"]],
-    admin: [
-      ["◷", "Lịch hẹn", "/appointments"],
-      ["♙", "Tài khoản / nhân viên", "/users"],
-      ["🚘", "Phương tiện", "/vehicles"],
-      ["▤", "Dịch vụ / bảng giá", "/services"],
-      ["⌂", "Gara / cấu hình", "/garages"],
-      ["↗", "Thống kê / doanh thu", "/reports"],
-    ],
-  };
+  const q = useData("/dashboard"),
+    d = q.data;
   return (
     <Screen
-      title={`Xin chào, ${user?.name || "bạn"}!`}
-      subtitle={roles[user?.role]}
+      showBack={false}
+      title="Xe khỏe, hành trình an tâm"
+      subtitle="Lịch bảo dưỡng cá nhân của bạn"
       refresh={q.reload}
     >
-      <View style={s.hero}>
-        <Text style={s.heroTitle}>{active.length} lịch đang xử lý</Text>
-        <Text style={s.heroText}>
-          {
-            list.filter(
-              (a: any) =>
-                new Date(a.starts_at).toLocaleDateString("en-CA", {
-                  timeZone: "Asia/Bangkok",
-                }) ===
-                new Date().toLocaleDateString("en-CA", {
-                  timeZone: "Asia/Bangkok",
-                }),
-            ).length
-          }{" "}
-          lịch hôm nay. Cùng chăm sóc từng chiếc xe, từ lịch hẹn đến khi bàn
-          giao.
-        </Text>
-      </View>
       <ErrorText text={q.error} />
-      <Body>{connected?'● Đang cập nhật trực tiếp':'○ Đang kết nối lại cập nhật trực tiếp…'}</Body>
-      {user?.role === "customer" && (
+      {d && (
         <>
-          <Button
-            title="Bật nhắc lịch trên điện thoại"
-            secondary
-            onPress={() =>
-              task.run(async () => {
-                await enableReminders();
-                await syncReminders(list, user.id);
-              }, "Đã bật nhắc lịch cho các lịch đã đồng bộ.")
-            }
-          />
-          <Feedback task={task} />
+          <Card>
+            <Heading>{d.vehicles} xe đang sử dụng</Heading>
+            <Body>
+              {d.overdue.length} quá hạn · {d.due.length} đến hạn ·{" "}
+              {d.upcoming.filter((p: any) => p.status === "soon").length} sắp
+              đến hạn
+            </Body>
+            <Body>Chi phí đã ghi nhận: {money(d.total_cost)}</Body>
+          </Card>
+          <View style={s.grid}>
+            {[
+              ["Xe của tôi", "/vehicles"],
+              ["Lịch bảo dưỡng", "/plans"],
+              ["Ghi nhận bảo dưỡng", "/record-edit"],
+              ["Lịch sử", "/records"],
+              ["Hạng mục", "/categories"],
+              ["Chi phí", "/costs"],
+              ["Cài đặt & sao lưu", "/settings"],
+              ["Tài khoản", "/profile"],
+            ].map(([title, path]) => (
+              <View key={path} style={{ width: "48%" }}>
+                <Button title={title} secondary onPress={() => go(path)} />
+              </View>
+            ))}
+          </View>
+          <Heading>Cần chú ý</Heading>
+          {[
+            ...d.overdue,
+            ...d.due,
+            ...d.upcoming.filter((p: any) => p.status === "soon"),
+          ]
+            .slice(0, 5)
+            .map((p: any) => (
+              <PlanCard key={p.id} plan={p} />
+            ))}
+          {!d.overdue.length &&
+            !d.due.length &&
+            !d.upcoming.some((p: any) => p.status === "soon") && (
+              <Empty text="Chưa có lịch cần nhắc. Thêm xe và tạo kế hoạch để bắt đầu." />
+            )}
+          <Heading>Gần đây</Heading>
+          {d.recent.map((r: any) => (
+            <Card key={r.id}>
+              <Heading>{r.category_name}</Heading>
+              <Body>
+                {dayLabel(r.performed_date)} · {money(r.cost)}
+              </Body>
+              <Button
+                title="Xem bản ghi"
+                secondary
+                onPress={() => go("/record?id=" + r.id)}
+              />
+            </Card>
+          ))}
         </>
       )}
-      <View style={s.grid}>
-        {[...(menu[user?.role] || []), ["♙", "Hồ sơ của tôi", "/profile"]].map(
-          ([icon, title, path]: string[]) => (
-            <Pressable key={path} style={s.tile} onPress={() => go(path)}>
-              <Text style={{ fontSize: 24, color: "#21604D" }}>{icon}</Text>
-              <Text style={[s.heading, { fontSize: 14 }]}>{title}</Text>
-            </Pressable>
-          ),
-        )}
-      </View>
-      <Heading>Lịch gần nhất</Heading>
-      {active
-        .slice()
-        .sort(
-          (a: any, b: any) => Date.parse(a.starts_at) - Date.parse(b.starts_at),
-        )
-        .slice(0, 3)
-        .map((a: any) => (
-          <Pressable key={a.id} onPress={() => go("/appointment?id=" + a.id)}>
-            <Card>
-              <Badge status={a.status} />
-              <Heading>
-                {a.plate} · #{a.id}
-              </Heading>
-              <Body>
-                {date(a.starts_at)} · {a.garage_name}
-              </Body>
-            </Card>
-          </Pressable>
-        ))}
-      {!active.length && <Body>Chưa có lịch đang xử lý.</Body>}
     </Screen>
   );
 }

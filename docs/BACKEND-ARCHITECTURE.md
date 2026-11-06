@@ -1,56 +1,15 @@
-# Kiến trúc backend
+# Kiến trúc backend cá nhân
 
-Backend dùng feature modules của NestJS. Điểm ghép ứng dụng là `src/app.module.ts`.
+Nest AppModule đăng ký DatabaseModule, AuthModule, PersonalModule và RealtimeModule. Controller xử lý HTTP và lấy owner từ request đã xác thực; service áp dụng nghiệp vụ; repository sở hữu SQL parameterized. Hàm kiểm tra dữ liệu/trạng thái/chu kỳ tập trung tại personal.rules.ts để kiểm thử độc lập.
 
-```text
-src/
-  main.ts                 Nạp môi trường và khởi động
-  bootstrap.ts            HTTP/CORS, filter, migration, shutdown hooks
-  app.module.ts           Đăng ký các module
-  health.controller.ts    Kiểm tra server
-  common/
-    guards/auth.guard.ts  Xác minh token, phiên và tài khoản hoạt động
-    filters/              Chuẩn hóa lỗi HTTP và PostgreSQL
-    types/                Request có user/session và kiểu role
-    validation/           Kiểm tra dữ liệu dùng chung
-  database/
-    connection.ts         Pool, migration, transaction
-    database.service.ts   Provider truy vấn và đóng pool khi shutdown
-    database.module.ts    Cung cấp DatabaseService
-  modules/
-    auth/
-    users/
-    vehicles/
-    garages/
-    services/
-    appointments/
-    notifications/
-    reports/
-  scripts/seed.ts         Dữ liệu khởi tạo
-```
+Auth có service/repository và recovery service/mailer riêng. PersonalModule gom miền quản lý cá nhân gồm controller/service cho xe, hạng mục, kế hoạch, bản ghi, dashboard, cài đặt, backup và inbox. PersonalRepository dùng whitelist bảng/cột cố định, tự bỏ owner_id do client gửi và luôn ràng owner vào WHERE/INSERT. Không còn route quản trị/tiếp nhận/kỹ thuật viên.
 
-Mỗi feature có `*.module.ts`, `*.controller.ts`, `*.service.ts`, `*.repository.ts`. Các feature nhận body có `dto/input.dto.ts`.
+Mỗi thay đổi nhiều bước dùng transaction PostgreSQL với advisory lock theo tài khoản: ghi bản ghi + tăng km xe, tạo lịch theo chu kỳ, restore toàn bộ dữ liệu. Kế hoạch hoàn thành được suy ra từ liên kết records.plan_id UNIQUE thay vì cập nhật trạng thái rời rạc dễ lệch. Ngày/km được tính lại khi đọc; ngày DATE giữ chuỗi YYYY-MM-DD để tránh lệch múi giờ.
 
-- Controller nhận HTTP và gọi service, không xử lý SQL.
-- Service giữ quy tắc nghiệp vụ, kiểm tra quyền, dữ liệu đầu vào và ranh giới transaction.
-- Repository giữ SQL tham số hóa; có thể dùng client transaction do service truyền xuống.
-- DTO hiện là TypeScript interface mô tả đầu vào. Kiểm tra dữ liệu lúc chạy vẫn nằm trong service và common/validation; không có ValidationPipe tự động từ interface.
-- AuthGuard đăng ký qua APP_GUARD trong AuthModule; quyền nghiệp vụ tiếp tục được kiểm tra trong service.
-- NotificationsModule quản lý bộ quét nhắc lịch qua lifecycle hooks, sử dụng AppointmentsService; timer dọn khi server đóng.
-- AppointmentsService giữ việc chuyển trạng thái và kiểm tra chỗ trống trong cùng transaction. Không tách chúng thành các thao tác DB rời rạc.
+Migration được bọc transaction và lock chung lúc khởi động. Nếu phát hiện bảng appointments của bản gara, server từ chối dùng database đó trước khi chạy DDL; dùng database riêng cho bản cá nhân. DatabaseService quản lý vòng đời pool.
 
-## Quy ước phát triển
+PostgreSQL trigger phát LISTEN/NOTIFY sau commit; RealtimeGateway xác thực lại phiên và chỉ phát data:changed tới owner liên quan. Client đọc lại API, không tin dữ liệu socket như một nguồn có thể bỏ qua guard. Có polling fallback và resync khi nối lại. Thu hồi phiên làm socket cũ bị ngắt.
 
-Thêm endpoint tại controller, kiểu đầu vào tại dto, quy tắc tại service, SQL tại repository. Đăng ký provider trong module. Chỉ export provider khi module khác cần. Mật khẩu/token không đưa vào log.
+Recovery dùng random token 32 byte, SHA-256 trong DB, một lần/15 phút; khóa user rồi khóa token theo cùng thứ tự để tránh deadlock khi gửi lại/đổi đồng thời. Bcrypt xử lý mật khẩu. Preview file nằm ngoài HTTP static và bị bỏ qua khi Git; production yêu cầu SMTP.
 
-Lệnh trong thư mục backend:
-
-- `npm run dev`: chạy có theo dõi thay đổi.
-- `npm run typecheck`: kiểm tra TypeScript.
-- `npm run build`: tạo dist.
-- `npm run start:prod`: chạy bản build; phải có .env và migrations ngoài dist.
-- `npm test`: kiểm thử API với server chạy sẵn, mặc định cổng 3000; TEST_API_URL dùng để đổi cổng.
-- `npm run format` / `npm run format:check`: chuẩn hóa/kiểm tra định dạng.
-- `npm run seed`: tạo dữ liệu cơ bản nếu chưa có.
-
-Cấu trúc này theo [feature modules của NestJS](https://docs.nestjs.com/modules) và dùng [lifecycle hooks](https://docs.nestjs.com/fundamentals/lifecycle-events) để quản lý tài nguyên. Đây là chuẩn hóa kiến trúc, không phải chứng nhận đã sẵn sàng triển khai production.
+Đây là cấu trúc cho một miền cá nhân có liên kết chặt. Khi cần tách đội/nghiệp vụ lớn hơn có thể tách PersonalModule thành feature module; không cần thay hợp đồng API hoặc logic sở hữu dữ liệu.

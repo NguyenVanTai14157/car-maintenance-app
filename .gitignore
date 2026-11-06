@@ -5,6 +5,8 @@ build/
 web-build/
 coverage/
 .expo/
+.next/
+out/
 .cache/
 *.tsbuildinfo
 *.log

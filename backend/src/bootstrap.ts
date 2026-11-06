@@ -8,8 +8,8 @@ export async function bootstrap() {
     throw Error("Configure backend/.env");
   await migrate();
   const app = await NestFactory.create(AppModule, { bodyParser: false });
-  app.use("/appointments", json({ limit: "32mb" }));
-  app.use(json({ limit: "4mb" }));
+
+  app.use(json({ limit: "32mb" }));
   app.enableCors();
   app.useGlobalFilters(new ApiExceptionFilter());
   app.enableShutdownHooks();
