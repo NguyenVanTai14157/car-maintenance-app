@@ -12,6 +12,7 @@ const columns: Record<string, string[]> = {
     "year",
     "odometer",
     "image",
+    "images",
     "notes",
     "archived",
   ],

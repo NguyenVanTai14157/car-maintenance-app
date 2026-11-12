@@ -59,9 +59,14 @@ export async function api(path: string, method = "GET", body?: unknown) {
     }
     return data;
   } catch (e: any) {
-    if (e.name === "AbortError" || e.message === "Network request failed")
+    if (
+      controller.signal.aborted ||
+      e.name === "AbortError" ||
+      e.message === "Network request failed" ||
+      e.message?.startsWith("fetch failed:")
+    )
       throw new Error(
-        "Không kết nối được máy chủ. Kiểm tra Wi-Fi và backend đang chạy.",
+        "Chưa kết nối được với AutoCare. Bạn hãy kiểm tra kết nối mạng rồi thử lại.",
       );
     throw e;
   } finally {

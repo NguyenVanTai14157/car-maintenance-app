@@ -25,7 +25,7 @@ export class PlansService {
         old &&
         (old.cancelled || (await this.repo.recordForPlan(uid, id!, c)))
       )
-        fail("Chỉ được sửa kế hoạch chưa hoàn thành và chưa hủy.");
+        fail("Chỉ có thể sửa lịch bảo dưỡng chưa hoàn thành và chưa hủy.");
       const vehicle = await this.repo.owned(
           "vehicles",
           data.vehicle_id,
@@ -58,14 +58,16 @@ export class PlansService {
     return this.repo.transaction(uid, async (c) => {
       const r = await this.repo.owned("records", id, uid, c);
       if (await this.repo.nextForRecord(uid, id, c))
-        fail("Đã tạo lịch tiếp theo cho bản ghi này.");
+        fail("Lần bảo dưỡng này đã có lịch tiếp theo.");
       const v = await this.repo.owned("vehicles", r.vehicle_id, uid, c);
       if (v.archived) fail("Xe đã lưu trữ.");
       const cat = await this.repo.owned("categories", r.category_id, uid, c);
       if (!cat.active) fail("Hạng mục đã ngừng sử dụng.");
       const next = nextSuggestion(r);
       if (!next.due_date && next.due_km == null)
-        fail("Bản ghi chưa cấu hình chu kỳ.");
+        fail(
+          "Hãy nhập chu kỳ theo tháng hoặc số km cho lần bảo dưỡng này để tạo lịch tiếp theo.",
+        );
       const settings = await this.repo.settings(uid, c);
       return this.repo.save(
         "plans",

@@ -40,7 +40,8 @@ export class BackupService {
         fail("Dữ liệu sao lưu không hợp lệ.");
     const unique = (list: any[]) => {
       const ids = list.map((x) => integer(x.id, "ID bản sao lưu", 1));
-      if (new Set(ids).size !== ids.length) fail("Bản sao lưu có ID trùng.");
+      if (new Set(ids).size !== ids.length)
+        fail("Bản sao có thông tin bị lặp. Vui lòng chọn bản sao khác.");
       return new Set(ids);
     };
     const vs = unique(b.vehicles),
@@ -71,7 +72,9 @@ export class BackupService {
         !cs.has(v.category_id) ||
         (x.source_record_id && !rs.has(x.source_record_id))
       )
-        fail("Liên kết kế hoạch không hợp lệ.");
+        fail(
+          "Bản sao có lịch bảo dưỡng không khớp với xe hoặc hạng mục. Vui lòng chọn bản sao khác.",
+        );
       return {
         old: x.id,
         ...v,
@@ -86,7 +89,9 @@ export class BackupService {
         !cs.has(v.category_id) ||
         (x.plan_id && !ps.has(x.plan_id))
       )
-        fail("Liên kết lịch sử không hợp lệ.");
+        fail(
+          "Bản sao có lịch sử bảo dưỡng không khớp với xe hoặc hạng mục. Vui lòng chọn bản sao khác.",
+        );
       const vehicle = vehicles.find((y: any) => y.old === v.vehicle_id);
       if (v.odometer > vehicle.odometer)
         fail("Km lịch sử vượt km hiện tại của xe trong bản sao lưu.");
@@ -97,18 +102,24 @@ export class BackupService {
           p.vehicle_id !== v.vehicle_id ||
           p.category_id !== v.category_id
         )
-          fail("Lịch sử không khớp kế hoạch.");
+          fail(
+            "Bản sao có thông tin bảo dưỡng không khớp với lịch đã đặt. Vui lòng chọn bản sao khác.",
+          );
       }
       return { old: x.id, ...v, plan: x.plan_id || null };
     });
     const linked = records.filter((x: any) => x.plan).map((x: any) => x.plan);
     if (new Set(linked).size !== linked.length)
-      fail("Một lịch có nhiều bản ghi hoàn thành.");
+      fail(
+        "Bản sao ghi nhận hoàn thành nhiều lần cho cùng một lịch bảo dưỡng. Vui lòng chọn bản sao khác.",
+      );
     const sources = plans
       .filter((x: any) => x.source)
       .map((x: any) => x.source);
     if (new Set(sources).size !== sources.length)
-      fail("Một bản ghi có nhiều lịch đề xuất.");
+      fail(
+        "Bản sao có nhiều lịch tiếp theo cho cùng một lần bảo dưỡng. Vui lòng chọn bản sao khác.",
+      );
     for (const p of plans)
       if (p.source) {
         const r = records.find((x: any) => x.old === p.source);
@@ -117,7 +128,9 @@ export class BackupService {
           r.category_id !== p.category_id ||
           r.plan === p.old
         )
-          fail("Lịch tiếp theo không khớp bản ghi nguồn.");
+          fail(
+            "Bản sao có lịch tiếp theo không khớp với lần bảo dưỡng trước đó. Vui lòng chọn bản sao khác.",
+          );
       }
     const ordered = [...records].sort(
       (a: any, b: any) =>

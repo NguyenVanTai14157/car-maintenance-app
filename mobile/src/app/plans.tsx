@@ -11,12 +11,15 @@ import {
   statuses,
 } from "../components/ui";
 import { useData } from "../hooks/data";
+import { isMaintenanceFilter } from "../utils/maintenance-overview";
 export default function Plans() {
   const params = useLocalSearchParams();
   const q = useData("/plans"),
     vehicles = useData("/vehicles");
   const [vehicle, V] = useState(Number(params.vehicle) || 0),
-    [filter, F] = useState("active");
+    [filter, F] = useState(
+      isMaintenanceFilter(params.status) ? params.status : "active",
+    );
   const list = (q.data || []).filter(
     (p: any) =>
       (!vehicle || p.vehicle_id === vehicle) &&

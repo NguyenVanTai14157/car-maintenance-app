@@ -285,14 +285,22 @@ function Vehicles() {
               <div className="detail-value">
                 {v.data.notes || "Không có ghi chú"}
               </div>
-              {v.data.image && (
-                <Image
-                  alt="Ảnh phương tiện"
-                  src={v.data.image}
-                  width="100%"
-                  className="vehicle-photo"
-                />
-              )}
+              <Image.PreviewGroup>
+                {(v.data.images?.length
+                  ? v.data.images
+                  : v.data.image
+                    ? [v.data.image]
+                    : []
+                ).map((src, index) => (
+                  <Image
+                    key={index}
+                    alt={`Ảnh xe ${index + 1}`}
+                    src={src}
+                    width="100%"
+                    className="vehicle-photo"
+                  />
+                ))}
+              </Image.PreviewGroup>
               <div className="detail-divider" />
               <h3 className="detail-title">Lịch sử bảo dưỡng</h3>
               <LoadError error={history.error} reload={history.reload} />

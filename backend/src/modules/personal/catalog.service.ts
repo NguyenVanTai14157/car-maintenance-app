@@ -18,6 +18,23 @@ export class PersonalVehiclesService {
         ? await this.repo.owned("vehicles", id, uid, c, true)
         : null;
       const resolved = await this.catalog.vehicleReferences(b, old, c);
+      // Older clients only know the first photo. Preserve the rest of the gallery.
+      if (old && b.images === undefined) {
+        const previous = old.images?.length
+          ? old.images
+          : old.image
+            ? [old.image]
+            : [];
+        resolved.images =
+          b.image === undefined || b.image === old.image
+            ? previous
+            : [
+                ...new Set([
+                  ...(b.image ? [b.image] : []),
+                  ...previous.slice(1),
+                ]),
+              ];
+      }
       const data = {
         ...vehicleInput(resolved),
         brand_id: resolved.brand_id,

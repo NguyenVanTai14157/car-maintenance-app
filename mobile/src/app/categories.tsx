@@ -62,7 +62,7 @@ export default function Categories() {
           <Heading>{c.name}</Heading>
           <Body>{c.active ? "Đang sử dụng" : "Đã ngừng sử dụng"}</Body>
           <Button
-            title="Sửa"
+            title="Sửa tên hạng mục"
             secondary
             onPress={() => {
               E(c);
@@ -84,7 +84,7 @@ export default function Categories() {
             }
           />
           <Button
-            title="Xóa hạng mục chưa dùng"
+            title="Xóa hạng mục"
             danger
             disabled={task.busy}
             onPress={() =>

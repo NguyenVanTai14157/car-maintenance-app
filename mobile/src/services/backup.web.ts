@@ -27,7 +27,11 @@ export function chooseBackup(): Promise<any> {
       try {
         resolve(JSON.parse(await file.text()));
       } catch {
-        reject(Error("Không đọc được file JSON."));
+        reject(
+          Error(
+            "Không đọc được bản sao đã chọn. Vui lòng chọn bản sao được lưu từ AutoCare.",
+          ),
+        );
       }
     };
     input.click();

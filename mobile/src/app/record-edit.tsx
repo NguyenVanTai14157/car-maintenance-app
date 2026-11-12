@@ -1,6 +1,8 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { day, Loading, Select } from "../components/personal";
+import { day, Loading, Select, VehicleSummary } from "../components/personal";
+import { DateField } from "../components/date-field";
+import { CategorySelect } from "../components/category-select";
 import {
   Body,
   Button,
@@ -30,10 +32,12 @@ export default function RecordEdit() {
     ? (plans.data || []).find((p: any) => p.id === Number(params.plan))
     : null;
   return (
-    <Screen title={params.id ? "Sửa bản ghi" : "Ghi nhận bảo dưỡng"}>
+    <Screen
+      title={params.id ? "Sửa thông tin bảo dưỡng" : "Thêm lần bảo dưỡng"}
+    >
       {records.data && plans.data && vehicles.data && cats.data ? (
         (params.id && !current) || (params.plan && !plan) ? (
-          <ErrorText text="Không tìm thấy dữ liệu." />
+          <ErrorText text="Không tìm thấy thông tin bảo dưỡng này." />
         ) : (
           <RecordForm
             initial={current}
@@ -41,6 +45,7 @@ export default function RecordEdit() {
             vehicle={Number(params.vehicle) || 0}
             vehicles={vehicles.data}
             cats={cats.data}
+            refreshCategories={cats.reload}
           />
         )
       ) : (
@@ -51,7 +56,14 @@ export default function RecordEdit() {
     </Screen>
   );
 }
-function RecordForm({ initial, plan, vehicle, vehicles, cats }: any) {
+function RecordForm({
+  initial,
+  plan,
+  vehicle,
+  vehicles,
+  cats,
+  refreshCategories,
+}: any) {
   const active = vehicles.filter(
       (v: any) => !v.archived || v.id === initial?.vehicle_id,
     ),
@@ -77,20 +89,28 @@ function RecordForm({ initial, plan, vehicle, vehicles, cats }: any) {
   const task = useSubmit();
   const examples: Record<string, string> = {
     performed_date: "Ví dụ: 2026-10-20",
-    odometer: "Ví dụ: 35000 (km)",
-    cost: "Ví dụ: 650000 (nhập số, không dấu chấm)",
+    odometer: "Ví dụ: 35000",
+    cost: "Ví dụ: 650000",
     content: "Ví dụ: Thay dầu động cơ và lọc dầu",
     notes: "Ví dụ: Dầu 5W-30, bảo dưỡng tại gara gần nhà",
-    interval_months: "Ví dụ: 6 (mỗi 6 tháng)",
-    interval_km: "Ví dụ: 5000 (mỗi 5000 km)",
+    interval_months: "Ví dụ: 6",
+    interval_km: "Ví dụ: 5000",
   };
-  const field = (key: string, label: string, numeric = false) => (
+  const field = (
+    key: string,
+    label: string,
+    numeric = false,
+    unit?: string,
+  ) => (
     <Field
       label={label}
       placeholder={examples[key]}
       value={b[key]}
       onChange={(v) => B({ ...b, [key]: v })}
       numeric={numeric}
+      unit={unit}
+      multiline={key === "content" || key === "notes"}
+      hint={key === "cost" ? "Nhập 0 nếu không phát sinh chi phí." : undefined}
     />
   );
   if (!active.length)
@@ -104,8 +124,8 @@ function RecordForm({ initial, plan, vehicle, vehicles, cats }: any) {
     <Card>
       {plan && (
         <Body>
-          Ghi nhận cho kế hoạch #{plan.id}. Chỉ đánh dấu hoàn thành khi lưu
-          thành công.
+          Bạn đang ghi lại lần bảo dưỡng cho lịch đã chọn. Lưu xong, lịch này sẽ
+          được đánh dấu hoàn thành.
         </Body>
       )}
       {!plan && !initial?.plan_id ? (
@@ -125,30 +145,43 @@ function RecordForm({ initial, plan, vehicle, vehicles, cats }: any) {
               name: v.plate || v.brand + " " + v.model,
             }))}
           />
-          <Select
+          <CategorySelect
             label="Hạng mục thực hiện"
             value={b.category_id}
             onChange={(v) => B({ ...b, category_id: v })}
             items={categories}
+            refresh={refreshCategories}
           />
         </>
       ) : (
-        <Body>
-          {vehicles.find((v: any) => v.id === b.vehicle_id)?.brand} ·{" "}
-          {cats.find((c: any) => c.id === b.category_id)?.name}
-        </Body>
+        <>
+          <VehicleSummary
+            vehicle={vehicles.find((v: any) => v.id === b.vehicle_id) || {}}
+          />
+          <Body>
+            Hạng mục: {cats.find((c: any) => c.id === b.category_id)?.name}
+          </Body>
+        </>
       )}
-      {field("performed_date", "Ngày thực hiện (YYYY-MM-DD)")}
-      {field("odometer", "Số km khi thực hiện", true)}
-      <Body>
-        Có thể nhập lịch sử cũ với km nhỏ hơn hiện tại, nhưng phải đúng thứ tự
-        ngày/km.
-      </Body>
-      {field("cost", "Chi phí (VND, nhập 0 nếu không phát sinh)", true)}
+      <DateField
+        label="Ngày thực hiện"
+        value={b.performed_date}
+        onChange={(v) => B({ ...b, performed_date: v })}
+        maximum={day()}
+        clearable={false}
+        hint="Chọn ngày đã thực hiện bảo dưỡng, không chọn ngày trong tương lai."
+      />
+      {field("odometer", "Số km khi thực hiện", true, "km")}
+      {field("cost", "Chi phí", true, "₫")}
       {field("content", "Nội dung bảo dưỡng")}
       {field("notes", "Ghi chú")}
-      {field("interval_months", "Chu kỳ tháng để đề xuất lần sau", true)}
-      {field("interval_km", "Chu kỳ km để đề xuất lần sau", true)}
+      {field(
+        "interval_months",
+        "Chu kỳ tháng để đề xuất lần sau",
+        true,
+        "tháng",
+      )}
+      {field("interval_km", "Chu kỳ km để đề xuất lần sau", true, "km")}
       <Heading>Hóa đơn / phụ tùng (không bắt buộc)</Heading>
       {b.images.map((image: string, i: number) => (
         <Card key={i}>
@@ -194,7 +227,7 @@ function RecordForm({ initial, plan, vehicle, vehicles, cats }: any) {
       />
       <Feedback task={task} />
       <Button
-        title="Lưu bản ghi bảo dưỡng"
+        title="Lưu thông tin bảo dưỡng"
         disabled={task.busy}
         onPress={() =>
           task.run(async () => {

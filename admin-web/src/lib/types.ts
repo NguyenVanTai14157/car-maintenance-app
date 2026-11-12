@@ -49,6 +49,7 @@ export interface Vehicle {
   catalog_model_name?: string;
   notes?: string;
   image?: string;
+  images?: string[];
 }
 export interface MaintenanceRecord {
   id: number;

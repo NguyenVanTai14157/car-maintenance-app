@@ -71,6 +71,7 @@ function ProfileForm({ user, setUser, logout }: any) {
         <Field
           label="Số điện thoại (không bắt buộc)"
           placeholder="Ví dụ: 0901234567"
+          phone
           value={phone}
           onChange={P}
         />
@@ -112,7 +113,7 @@ function ProfileForm({ user, setUser, logout }: any) {
               await api("/auth/password", "POST", { current, password });
               C("");
               W("");
-            }, "Đã đổi mật khẩu, các phiên khác đã kết thúc.")
+            }, "Đã đổi mật khẩu. Bạn cần đăng nhập lại trên các thiết bị khác.")
           }
         />
         <Feedback task={security} />

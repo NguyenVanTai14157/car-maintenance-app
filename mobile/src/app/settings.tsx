@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Alert, Platform } from "react-native";
 import {
   Body,
   Button,
@@ -36,6 +37,13 @@ function SettingsForm({ initial, reload }: any) {
   const [b, B] = useState(initial),
     task = useSubmit();
   const { user } = useSession();
+  const showSavedPopup = (enabled: boolean) => {
+    const message = enabled
+      ? "Đã bật nhắc lịch. Hãy cho phép thông báo trên điện thoại để nhận lời nhắc."
+      : "Đã tắt thông báo nhắc lịch. Lịch bảo dưỡng vẫn được theo dõi trong ứng dụng.";
+    if (Platform.OS === "web") globalThis.alert(message);
+    else Alert.alert("Đã lưu cài đặt", message, [{ text: "Đã hiểu" }]);
+  };
   return (
     <>
       <Card>
@@ -45,38 +53,41 @@ function SettingsForm({ initial, reload }: any) {
           onChange={(v) => B({ ...b, notifications: v })}
           options={[
             { label: "Bật nhắc lịch", value: true },
-            { label: "Tắt nhắc lịch", value: false },
+            { label: "Tắt thông báo nhắc lịch", value: false },
           ]}
         />
-        <Field
-          label="Số ngày nhắc trước mặc định"
-          placeholder="Ví dụ: 7 (nhắc trước 7 ngày)"
-          value={b.remind_days}
-          onChange={(v) => B({ ...b, remind_days: v })}
-          numeric
-        />
-        <Field
-          label="Số km nhắc trước mặc định"
-          placeholder="Ví dụ: 500 (nhắc trước 500 km)"
-          value={b.remind_km}
-          onChange={(v) => B({ ...b, remind_km: v })}
-          numeric
-        />
-        <Field
-          label="Giờ nhắc trên điện thoại (0–23)"
-          placeholder="Ví dụ: 9 (9 giờ sáng)"
-          value={b.remind_hour}
-          onChange={(v) => B({ ...b, remind_hour: v })}
-          numeric
-        />
-        <Body>
-          Mặc định áp dụng cho kế hoạch mới. Mỗi kế hoạch vẫn có ngưỡng nhắc
-          riêng.
-        </Body>
-        <Body>
-          Đơn vị: km · Chi phí: VND. Km được cập nhật thủ công, ứng dụng không
-          tự theo dõi quãng đường.
-        </Body>
+        {b.notifications ? (
+          <>
+            <Field
+              label="Số ngày nhắc trước mặc định"
+              placeholder="Ví dụ: 7"
+              unit="ngày"
+              value={b.remind_days}
+              onChange={(v) => B({ ...b, remind_days: v })}
+              numeric
+            />
+            <Field
+              label="Số km nhắc trước mặc định"
+              placeholder="Ví dụ: 500"
+              unit="km"
+              value={b.remind_km}
+              onChange={(v) => B({ ...b, remind_km: v })}
+              numeric
+            />
+            <Field
+              label="Giờ nhắc trên điện thoại (0–23)"
+              placeholder="Ví dụ: 9 (9 giờ sáng)"
+              unit="giờ"
+              value={b.remind_hour}
+              onChange={(v) => B({ ...b, remind_hour: v })}
+              numeric
+            />
+          </>
+        ) : (
+          <Body>
+            Thông báo đang tắt. Lịch bảo dưỡng vẫn được theo dõi trong ứng dụng.
+          </Body>
+        )}
         <Button
           title="Lưu cài đặt"
           disabled={task.busy}
@@ -84,41 +95,44 @@ function SettingsForm({ initial, reload }: any) {
             task.run(async () => {
               await api("/settings", "PATCH", b);
               await reload();
-            })
+              showSavedPopup(Boolean(b.notifications));
+            }, "")
           }
         />
-        <Button
-          title="Cho phép thông báo trên điện thoại"
-          secondary
-          disabled={task.busy}
-          onPress={() =>
-            task.run(async () => {
-              await enableReminders();
-              await api("/settings", "PATCH", { ...b, notifications: true });
-              await reload();
-            }, "Đã cho phép nhắc lịch. Các lịch phù hợp sẽ được đồng bộ khi có kết nối.")
-          }
-        />
+        {b.notifications && (
+          <Button
+            title="Cho phép thông báo trên điện thoại"
+            secondary
+            disabled={task.busy}
+            onPress={() =>
+              task.run(async () => {
+                await enableReminders();
+                await api("/settings", "PATCH", { ...b, notifications: true });
+                await reload();
+              }, "Đã bật nhắc lịch trên điện thoại. Ứng dụng sẽ cập nhật các lời nhắc khi có kết nối mạng.")
+            }
+          />
+        )}
       </Card>
       <Card>
         <Heading>Sao lưu dữ liệu cá nhân</Heading>
         <Body>
-          Dữ liệu đã lưu được đồng bộ theo tài khoản {user?.email}. Bạn có thể
-          xuất thêm file JSON gồm xe, kế hoạch, lịch sử, chi phí và ảnh.
+          Dữ liệu được lưu theo tài khoản {user?.email}. Bạn có thể lưu thêm bản
+          sao dự phòng để khôi phục xe, lịch bảo dưỡng, chi phí và ảnh khi cần.
         </Body>
         <Button
-          title="Xuất file sao lưu"
+          title="Lưu bản sao dự phòng"
           secondary
           disabled={task.busy}
           onPress={() =>
             task.run(async () => {
               const data = await api("/backup");
               await exportBackup(data);
-            }, "Đã mở nơi lưu/chia sẻ file sao lưu.")
+            }, "Đã mở nơi lưu hoặc chia sẻ bản sao dự phòng.")
           }
         />
         <Button
-          title="Khôi phục từ file"
+          title="Khôi phục dữ liệu"
           secondary
           disabled={task.busy}
           onPress={() =>
@@ -126,7 +140,7 @@ function SettingsForm({ initial, reload }: any) {
               const backup = await chooseBackup();
               if (!backup) return;
               confirm(
-                "Khôi phục sẽ thay thế toàn bộ dữ liệu xe/bảo dưỡng của tài khoản này. Hãy xuất bản sao hiện tại trước. Tiếp tục?",
+                "Khôi phục sẽ thay thế toàn bộ dữ liệu xe và bảo dưỡng hiện tại bằng bản sao bạn chọn. Hãy lưu một bản sao dự phòng trước khi tiếp tục. Bạn có muốn khôi phục không?",
                 () =>
                   void task.run(async () => {
                     await api("/backup/restore", "POST", backup);
@@ -137,8 +151,8 @@ function SettingsForm({ initial, reload }: any) {
           }
         />
         <Body>
-          Chỉ khôi phục file của chính bạn. Tài khoản và mật khẩu không nằm
-          trong bản sao lưu.
+          Chỉ chọn tệp được xuất từ AutoCare. Bạn có thể khôi phục vào tài khoản
+          đang đăng nhập; tệp sao lưu không chứa tài khoản và mật khẩu.
         </Body>
       </Card>
       <Feedback task={task} />

@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { dayLabel } from "../components/personal";
+import { dayLabel, VehicleSummary } from "../components/personal";
 import {
   Body,
   Button,
@@ -30,29 +30,29 @@ export default function Record() {
         <>
           <Card>
             <Heading>{r.category_name}</Heading>
-            <Body>{r.plate || r.brand + " " + r.model}</Body>
+            <VehicleSummary vehicle={r} />
+            <Body>Ngày thực hiện: {dayLabel(r.performed_date)}</Body>
             <Body>
-              Thực hiện: {dayLabel(r.performed_date)} ·{" "}
-              {r.odometer.toLocaleString("vi-VN")} km
+              Số km khi thực hiện: {r.odometer.toLocaleString("vi-VN")} km
             </Body>
-            <Heading>{money(r.cost)}</Heading>
-            <Body>{r.content}</Body>
-            <Body>{r.notes || "Không có ghi chú"}</Body>
+            <Heading>Chi phí: {money(r.cost)}</Heading>
+            <Body>Nội dung bảo dưỡng: {r.content}</Body>
+            <Body>Ghi chú: {r.notes || "Không có ghi chú"}</Body>
             {r.images.map((image: string, i: number) => (
               <Photo key={i} uri={image} />
             ))}
             <Button
-              title="Sửa bản ghi"
+              title="Sửa thông tin bảo dưỡng"
               secondary
               onPress={() => go("/record-edit?id=" + r.id)}
             />
             <Button
-              title="Xóa bản ghi"
+              title="Xóa lần bảo dưỡng này"
               danger
               disabled={task.busy}
               onPress={() =>
                 confirm(
-                  "Xóa bản ghi? Chi phí sẽ được tính lại. Kế hoạch liên kết sẽ trở về trạng thái theo ngày/km.",
+                  "Bạn có muốn xóa lần bảo dưỡng này? Tổng chi phí sẽ được tính lại. Nếu lần bảo dưỡng này đã hoàn thành một lịch, lịch đó sẽ được mở lại và tiếp tục nhắc theo ngày hoặc số km.",
                   () =>
                     void task.run(async () => {
                       await api("/records/" + r.id, "DELETE");
@@ -67,11 +67,15 @@ export default function Record() {
             <Card>
               <Heading>Đề xuất lần bảo dưỡng tiếp theo</Heading>
               <Body>
-                Tính từ lần thực hiện thực tế này; chưa tự tạo kế hoạch.
+                Ngày và số km được tính từ lần bảo dưỡng vừa lưu. Bấm tạo lịch
+                nếu bạn muốn được nhắc cho lần tiếp theo.
               </Body>
+              <Body>Ngày dự kiến: {dayLabel(r.suggestion.due_date)}</Body>
               <Body>
-                Ngày: {dayLabel(r.suggestion.due_date)} · Km:{" "}
-                {r.suggestion.due_km ?? "Chưa đặt"}
+                Km đến hạn:{" "}
+                {r.suggestion.due_km == null
+                  ? "Chưa đặt"
+                  : `${r.suggestion.due_km.toLocaleString("vi-VN")} km`}
               </Body>
               {next ? (
                 <Button
@@ -81,7 +85,7 @@ export default function Record() {
                 />
               ) : (
                 <Button
-                  title="Xác nhận tạo lịch tiếp theo"
+                  title="Tạo lịch bảo dưỡng tiếp theo"
                   disabled={task.busy || r.vehicle_archived}
                   onPress={() =>
                     task.run(async () => {

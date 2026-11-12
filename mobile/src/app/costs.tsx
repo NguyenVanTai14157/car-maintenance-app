@@ -1,15 +1,19 @@
 import { useState } from "react";
-import { Select } from "../components/personal";
+import { dayLabel, Select, VehicleIdentifier } from "../components/personal";
+import { Pressable, Text } from "react-native";
+import { DateField } from "../components/date-field";
+import { PeriodPicker } from "../components/period-picker";
 import {
   Body,
   Card,
   Chips,
   Empty,
   ErrorText,
-  Field,
   Heading,
   money,
   Screen,
+  go,
+  s,
 } from "../components/ui";
 import { useData } from "../hooks/data";
 export default function Costs() {
@@ -20,14 +24,22 @@ export default function Costs() {
     [category, C] = useState(0),
     [from, F] = useState(""),
     [to, T] = useState(""),
-    [period, P] = useState("month");
-  const list = (q.data?.records || []).filter(
-    (r: any) =>
-      (!vehicle || r.vehicle_id === vehicle) &&
-      (!category || r.category_id === category) &&
-      (!from || r.performed_date >= from) &&
-      (!to || r.performed_date <= to),
-  );
+    [period, P] = useState("month"),
+    [selectedPeriod, setSelectedPeriod] = useState("");
+  const list = (q.data?.records || [])
+    .filter(
+      (r: any) =>
+        (!vehicle || r.vehicle_id === vehicle) &&
+        (!category || r.category_id === category) &&
+        (!from || r.performed_date >= from) &&
+        (!to || r.performed_date <= to),
+    )
+    .filter(
+      (r: any) =>
+        !selectedPeriod ||
+        period === "category" ||
+        r.performed_date.startsWith(selectedPeriod),
+    );
   const grouped: Record<string, number> = {};
   for (const r of list) {
     const key =
@@ -36,10 +48,11 @@ export default function Costs() {
         : r.performed_date.slice(0, period === "year" ? 4 : 7);
     grouped[key] = (grouped[key] || 0) + r.cost;
   }
+  const validRange = !from || !to || from <= to;
   return (
     <Screen
       title="Chi phí bảo dưỡng"
-      subtitle="Chi phí từ bản ghi thực tế; bao gồm cả xe đã lưu trữ."
+      subtitle="Các khoản đã chi cho bảo dưỡng, bao gồm cả xe đã lưu trữ."
       refresh={q.reload}
     >
       <Select
@@ -60,43 +73,79 @@ export default function Costs() {
         onChange={C}
         items={[{ id: 0, name: "Tất cả hạng mục" }, ...(cats.data || [])]}
       />
-      <Field
-        label="Từ ngày (YYYY-MM-DD)"
-        placeholder="Ví dụ: 2026-01-01"
+      <DateField
+        label="Từ ngày"
+        maximum={to || undefined}
         value={from}
         onChange={F}
       />
-      <Field
-        label="Đến ngày (YYYY-MM-DD)"
-        placeholder="Ví dụ: 2026-12-31"
+      <DateField
+        label="Đến ngày"
+        minimum={from || undefined}
         value={to}
         onChange={T}
       />
       <ErrorText text={q.error} />
-      <Card>
-        <Heading>
-          {money(list.reduce((sum: number, r: any) => sum + r.cost, 0))}
-        </Heading>
-        <Body>{list.length} lần bảo dưỡng trong bộ lọc</Body>
-      </Card>
+      {!!from && !!to && from > to && (
+        <ErrorText text="Ngày bắt đầu phải trước hoặc bằng ngày kết thúc." />
+      )}
       <Chips
         value={period}
-        onChange={P}
+        onChange={(value) => {
+          P(value);
+          setSelectedPeriod("");
+        }}
         options={[
           { label: "Theo tháng", value: "month" },
           { label: "Theo năm", value: "year" },
           { label: "Theo hạng mục", value: "category" },
         ]}
       />
-      {Object.entries(grouped)
-        .sort(([a], [b]) => b.localeCompare(a))
-        .map(([name, total]) => (
-          <Card key={name}>
-            <Heading>{name}</Heading>
-            <Body>{money(total)}</Body>
-          </Card>
+      {(period === "month" || period === "year") && (
+        <PeriodPicker
+          mode={period}
+          value={selectedPeriod}
+          onChange={setSelectedPeriod}
+        />
+      )}
+      {validRange &&
+        Object.entries(grouped)
+          .sort(([a], [b]) => b.localeCompare(a))
+          .map(([name, total]) => (
+            <Card key={name}>
+              <Heading>
+                {period === "month"
+                  ? `Tháng ${Number(name.slice(5))}/${name.slice(0, 4)}`
+                  : period === "year"
+                    ? `Năm ${name}`
+                    : name}
+              </Heading>
+              <Body>Tổng chi phí: {money(total)}</Body>
+            </Card>
+          ))}
+      {validRange && list.length > 0 && (
+        <Heading>Chi tiết từng lần bảo dưỡng</Heading>
+      )}
+      {validRange &&
+        list.map((r: any) => (
+          <Pressable
+            key={r.id}
+            accessibilityRole="button"
+            accessibilityLabel={`Xem chi phí lần bảo dưỡng ${r.id}`}
+            onPress={() => go("/record?id=" + r.id)}
+          >
+            <Card>
+              <Heading>{r.category_name}</Heading>
+              <VehicleIdentifier vehicle={r} />
+              <Body>Ngày thực hiện: {dayLabel(r.performed_date)}</Body>
+              <Heading>Chi phí: {money(r.cost)}</Heading>
+              <Text style={s.smallLink}>Xem chi tiết bảo dưỡng →</Text>
+            </Card>
+          </Pressable>
         ))}
-      {!list.length && <Empty text="Chưa có chi phí trong khoảng này." />}
+      {validRange && q.data && !list.length && (
+        <Empty text="Chưa có chi phí trong khoảng này." />
+      )}
     </Screen>
   );
 }

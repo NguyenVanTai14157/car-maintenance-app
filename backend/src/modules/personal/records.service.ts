@@ -23,7 +23,7 @@ export class RecordsService {
         ? await this.repo.owned("records", id, uid, c, true)
         : null;
       if (old && b.plan_id != null && Number(b.plan_id) !== Number(old.plan_id))
-        fail("Không thể đổi liên kết kế hoạch của bản ghi đã lưu.");
+        fail("Không thể đổi lịch bảo dưỡng gắn với lần bảo dưỡng đã lưu.");
       const planId = old
         ? old.plan_id
         : b.plan_id
@@ -41,7 +41,7 @@ export class RecordsService {
           (b.vehicle_id && Number(b.vehicle_id) !== p.vehicle_id) ||
           (b.category_id && Number(b.category_id) !== p.category_id)
         )
-          fail("Xe/hạng mục phải khớp kế hoạch.");
+          fail("Xe và hạng mục phải giống với lịch bảo dưỡng đã chọn.");
         input = {
           ...input,
           vehicle_id: p.vehicle_id,
@@ -59,7 +59,9 @@ export class RecordsService {
           old.category_id !== data.category_id) &&
         (await this.repo.nextForRecord(uid, old.id, c))
       )
-        fail("Bản ghi đã có lịch tiếp theo; không thể đổi xe hoặc hạng mục.");
+        fail(
+          "Lần bảo dưỡng này đã có lịch tiếp theo nên không thể đổi xe hoặc hạng mục.",
+        );
       if ((!old || old.vehicle_id !== data.vehicle_id) && v.archived)
         fail("Không ghi thêm bảo dưỡng cho xe đã lưu trữ.");
       if ((!old || old.category_id !== data.category_id) && !cat.active)

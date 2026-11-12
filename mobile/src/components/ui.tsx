@@ -13,10 +13,12 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  type TextInputProps,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSession } from "../hooks/session";
+import { normalizeIntegerInput } from "./number-values";
 export const colors = {
   ink: "#173F35",
   green: "#21604D",
@@ -56,6 +58,8 @@ export function Screen({
   refresh,
   allowed,
   showBack = true,
+  wide = false,
+  onBack,
 }: {
   title: string;
   subtitle?: string;
@@ -63,6 +67,8 @@ export function Screen({
   refresh?: () => void;
   allowed?: string[];
   showBack?: boolean;
+  wide?: boolean;
+  onBack?: () => void;
 }) {
   const { user, loading } = useSession();
   if (loading) return <ActivityIndicator style={{ flex: 1 }} />;
@@ -80,8 +86,10 @@ export function Screen({
         <View style={s.header}>
           {showBack ? (
             <Pressable
-              onPress={() =>
-                router.canGoBack() ? router.back() : router.replace("/home")
+              onPress={
+                onBack ||
+                (() =>
+                  router.canGoBack() ? router.back() : router.replace("/home"))
               }
               accessibilityLabel="Quay lại"
               accessibilityRole="button"
@@ -107,7 +115,7 @@ export function Screen({
               <RefreshControl refreshing={false} onRefresh={refresh} />
             ) : undefined
           }
-          contentContainerStyle={s.page}
+          contentContainerStyle={[s.page, wide && { maxWidth: 1000 }]}
         >
           <Text style={s.title}>{title}</Text>
           {subtitle && <Text style={s.subtitle}>{subtitle}</Text>}
@@ -152,6 +160,10 @@ export function Field({
   multiline = false,
   placeholder = "",
   email = false,
+  unit,
+  hint,
+  phone = false,
+  autoComplete,
 }: {
   label: string;
   value: any;
@@ -161,36 +173,64 @@ export function Field({
   multiline?: boolean;
   placeholder?: string;
   email?: boolean;
+  unit?: string;
+  hint?: string;
+  phone?: boolean;
+  autoComplete?: TextInputProps["autoComplete"];
 }) {
   const [show, setShow] = useState(false);
+  const [focused, setFocused] = useState(false);
   return (
     <View style={{ marginTop: 12 }}>
       <Text style={s.label}>{label}</Text>
-      <View style={s.inputRow}>
+      <View style={[s.inputRow, focused && { borderColor: colors.green }]}>
         <TextInput
           accessibilityLabel={label}
+          accessibilityHint={unit ? `Đơn vị: ${unit}` : hint}
           style={[
             s.input,
             multiline && { minHeight: 86, textAlignVertical: "top" },
           ]}
           value={String(value ?? "")}
-          onChangeText={onChange}
+          onChangeText={(v) => onChange(numeric ? normalizeIntegerInput(v) : v)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
           placeholder={placeholder}
           placeholderTextColor="#8B9992"
           secureTextEntry={secret && !show}
           autoCapitalize={email || secret ? "none" : "sentences"}
-          autoCorrect={!email && !secret}
+          autoCorrect={!email && !secret && !numeric && !phone}
+          autoComplete={autoComplete}
           keyboardType={
-            numeric ? "number-pad" : email ? "email-address" : "default"
+            numeric
+              ? "number-pad"
+              : phone
+                ? "phone-pad"
+                : email
+                  ? "email-address"
+                  : "default"
           }
           multiline={multiline}
         />
+        {!!unit && (
+          <Text
+            style={{
+              color: colors.ink,
+              fontSize: 14,
+              fontWeight: "600",
+              paddingHorizontal: 14,
+            }}
+          >
+            {unit}
+          </Text>
+        )}
         {secret && (
           <Pressable onPress={() => setShow(!show)} style={{ padding: 14 }}>
             <Text style={s.smallLink}>{show ? "Ẩn" : "Hiện"}</Text>
           </Pressable>
         )}
       </View>
+      {!!hint && <Text style={s.hint}>{hint}</Text>}
     </View>
   );
 }
@@ -256,11 +296,17 @@ export function Chips({
     </View>
   );
 }
-export function Badge({ status }: { status: string }) {
+export function Badge({ status, label }: { status: string; label?: string }) {
+  const tone =
+    status === "overdue"
+      ? { bg: "#FCEAE8", ink: "#A3332B" }
+      : status === "due" || status === "soon"
+        ? { bg: "#FFF2D5", ink: "#805600" }
+        : { bg: "#E7F2E8", ink: colors.green };
   return (
-    <View style={s.badge}>
-      <Text style={{ color: colors.green, fontWeight: "600", fontSize: 12 }}>
-        {statuses[status] || status}
+    <View style={[s.badge, { backgroundColor: tone.bg }]}>
+      <Text style={{ color: tone.ink, fontWeight: "600", fontSize: 12 }}>
+        {label || statuses[status] || status}
       </Text>
     </View>
   );
@@ -306,7 +352,7 @@ export async function pickPhoto(camera = false) {
     mediaTypes: ["images"],
     base64: true,
     quality: 0.35,
-    allowsEditing: true,
+    allowsEditing: false,
   };
   const result = camera
     ? await ImagePicker.launchCameraAsync(options)
@@ -318,7 +364,10 @@ export async function pickPhoto(camera = false) {
     throw new Error("Ảnh quá lớn. Chọn ảnh nhỏ hơn 2 MB.");
   return `data:image/jpeg;base64,${a.base64}`;
 }
-export async function pickMaintenancePhotos(camera = false): Promise<string[]> {
+export async function pickPhotos(
+  camera = false,
+  selectionLimit = 10,
+): Promise<string[]> {
   if (camera) {
     const photo = await pickPhoto(true);
     return photo ? [photo] : [];
@@ -326,7 +375,7 @@ export async function pickMaintenancePhotos(camera = false): Promise<string[]> {
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ["images"],
     allowsMultipleSelection: true,
-    selectionLimit: 10,
+    selectionLimit,
     allowsEditing: false,
     base64: true,
     quality: 0.35,
@@ -340,6 +389,7 @@ export async function pickMaintenancePhotos(camera = false): Promise<string[]> {
     return `data:image/jpeg;base64,${asset.base64}`;
   });
 }
+export const pickMaintenancePhotos = pickPhotos;
 export function Photo({ uri }: { uri: string }) {
   return (
     <Image
@@ -411,7 +461,8 @@ export const s = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: "#FAFCFA",
   },
-  input: { flex: 1, padding: 14, fontSize: 16, color: colors.ink },
+  input: { flex: 1, minWidth: 0, padding: 14, fontSize: 16, color: colors.ink },
+  hint: { fontSize: 12, lineHeight: 18, color: colors.muted, marginTop: 6 },
   button: {
     padding: 15,
     borderRadius: 12,
@@ -434,6 +485,7 @@ export const s = StyleSheet.create({
   },
   selected: { backgroundColor: colors.green },
   badge: {
+    maxWidth: "100%",
     backgroundColor: "#E7F2E8",
     alignSelf: "flex-start",
     paddingHorizontal: 10,

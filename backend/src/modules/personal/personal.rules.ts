@@ -30,6 +30,12 @@ export const attachments = (v: any): string[] => {
   return [...new Set(v.map(imageData))] as string[];
 };
 export function vehicleInput(b: any) {
+  const images =
+    b.images === undefined
+      ? b.image
+        ? [imageData(b.image)]
+        : []
+      : attachments(b.images);
   const plate = text(b.plate, "Biển số", 20, false)
     .replace(/[\s.-]/g, "")
     .toUpperCase();
@@ -45,7 +51,8 @@ export function vehicleInput(b: any) {
       new Date().getFullYear() + 1,
     ),
     odometer: integer(b.odometer, "Số km", 0, 10000000),
-    image: b.image ? imageData(b.image) : "",
+    images,
+    image: images[0] || "",
     notes: text(b.notes, "Ghi chú", 2000, false),
   };
 }

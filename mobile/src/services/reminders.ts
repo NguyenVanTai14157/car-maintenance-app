@@ -4,6 +4,7 @@ import { Platform } from "react-native";
 import * as Notifications from "./local-notifications";
 import { AndroidImportance } from "./local-notifications";
 import { prepareReminderChannel } from "./notification-channel";
+import { planAlert } from "../utils/plan-alert";
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldPlaySound: true,
@@ -115,7 +116,7 @@ async function sync(plans: any[], settings: any, uid: number) {
         await Notifications.scheduleNotificationAsync({
           content: {
             title: p.category_name,
-            body: `${p.plate || p.brand + " " + p.model} · Theo km: ${p.current_km} / ${p.due_km} km`,
+            body: `${p.plate || p.brand + " " + p.model} · ${planAlert(p).details.find((detail) => detail.includes("theo km:")) || `Theo km: hiện tại ${p.current_km} km; đến hạn ${p.due_km} km`}`,
             data: { app: "autocare-personal", planId: p.id },
           },
           trigger: null,

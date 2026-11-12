@@ -1,9 +1,11 @@
 import { Redirect, router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   Text,
   View,
@@ -21,14 +23,38 @@ import {
 } from "../components/ui";
 import { useSession } from "../hooks/session";
 import { api } from "../services/api";
+import {
+  readRememberedAccount,
+  rememberAccount,
+} from "../services/remembered-account";
 export default function Login() {
   const session = useSession();
   const [register, R] = useState(false),
     [name, N] = useState(""),
     [email, E] = useState(""),
     [password, P] = useState("");
+  const [remember, setRemember] = useState(false);
+  const [accountLoading, setAccountLoading] = useState(true);
+  useEffect(() => {
+    let active = true;
+    readRememberedAccount()
+      .then((saved) => {
+        if (active && saved) {
+          E(saved);
+          setRemember(true);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (active) setAccountLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
   const task = useSubmit();
-  if (session.loading) return <ActivityIndicator style={{ flex: 1 }} />;
+  if (session.loading || accountLoading)
+    return <ActivityIndicator style={{ flex: 1 }} />;
   if (session.user) return <Redirect href="/home" />;
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -44,8 +70,8 @@ export default function Login() {
           <View style={s.hero}>
             <Text style={s.heroTitle}>Chăm xe của bạn, theo cách của bạn.</Text>
             <Text style={s.heroText}>
-              Lịch bảo dưỡng, số km và chi phí — lưu theo tài khoản, đồng hành
-              trên mọi điện thoại.
+              Quản lý lịch bảo dưỡng, theo dõi chi phí và nhắc bạn chăm xe đúng
+              lúc.
             </Text>
           </View>
           <Card>
@@ -66,6 +92,7 @@ export default function Login() {
               value={email}
               onChange={E}
               email
+              autoComplete="username"
             />
             <Field
               label="Mật khẩu"
@@ -75,7 +102,44 @@ export default function Login() {
               value={password}
               onChange={P}
               secret
+              autoComplete={register ? "new-password" : "current-password"}
             />
+            <Pressable
+              accessibilityRole="checkbox"
+              aria-checked={remember}
+              accessibilityLabel="Ghi nhớ tài khoản"
+              accessibilityHint="Tự điền email trong lần đăng nhập sau"
+              accessibilityState={{ checked: remember, disabled: task.busy }}
+              disabled={task.busy}
+              onPress={() => setRemember(!remember)}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 10,
+                minHeight: 48,
+                paddingVertical: 8,
+              }}
+            >
+              <View
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: 5,
+                  borderWidth: 1.5,
+                  borderColor: colors.green,
+                  backgroundColor: remember ? colors.green : "white",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                {remember && (
+                  <Text style={{ color: "white", fontWeight: "700" }}>✓</Text>
+                )}
+              </View>
+              <Text style={{ color: colors.ink, fontSize: 14, flexShrink: 1 }}>
+                Ghi nhớ tài khoản
+              </Text>
+            </Pressable>
             <Feedback task={task} />
             <ErrorText text={session.startupError} />
             <Button
@@ -90,8 +154,20 @@ export default function Login() {
                       ? { name, email, password }
                       : { identifier: email, password },
                   );
+                  let rememberFailed = false;
+                  try {
+                    await rememberAccount(remember ? data.user.email : null);
+                  } catch {
+                    rememberFailed = true;
+                  }
                   await session.login(data);
                   router.replace("/home");
+                  if (rememberFailed) {
+                    const message =
+                      "Bạn đã đăng nhập, nhưng chưa lưu được email trên thiết bị này. Lần sau bạn cần nhập lại email.";
+                    if (Platform.OS === "web") window.alert(message);
+                    else Alert.alert("Chưa ghi nhớ được tài khoản", message);
+                  }
                 }, "")
               }
             />

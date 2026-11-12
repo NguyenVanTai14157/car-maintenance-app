@@ -87,7 +87,9 @@ let db,
   );
   assert.equal(
     (await db.query("SELECT count(*)::int n FROM schema_migrations")).rows[0].n,
-    3,
+    fs
+      .readdirSync(path.resolve(__dirname, "../migrations"))
+      .filter((file) => file.endsWith(".sql")).length,
   );
   console.log(
     "PASS migration from personal schema: data/session preserved, exact legacy links, unmatched text kept, migrations idempotent and seed runs once.",

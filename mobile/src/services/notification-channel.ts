@@ -21,7 +21,7 @@ export async function prepareReminderChannel(
     )
       return undefined;
     throw new Error(
-      "Không tạo được kênh nhắc lịch. Hãy thử lại sau khi mở lại ứng dụng.",
+      "Chưa bật được thông báo nhắc lịch. Hãy mở lại ứng dụng rồi thử lại.",
     );
   }
 }

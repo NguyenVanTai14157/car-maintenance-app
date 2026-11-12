@@ -69,6 +69,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }, []);
   async function login(result: any) {
     await saveToken(result.accessToken);
+    setStartupError("");
     setUser(result.user);
   }
   async function logout() {
