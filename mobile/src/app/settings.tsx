@@ -10,18 +10,15 @@ import {
   Field,
   Heading,
   Screen,
-  confirm,
   useSubmit,
 } from "../components/ui";
 import { useData } from "../hooks/data";
-import { useSession } from "../hooks/session";
 import { api } from "../services/api";
-import { chooseBackup, exportBackup } from "../services/backup";
 import { enableReminders } from "../services/reminders";
 export default function Settings() {
   const q = useData("/settings");
   return (
-    <Screen title="Cài đặt & sao lưu" refresh={q.reload}>
+    <Screen title="Cài đặt" refresh={q.reload}>
       <ErrorText text={q.error} />
       {q.data && (
         <SettingsForm
@@ -36,7 +33,6 @@ export default function Settings() {
 function SettingsForm({ initial, reload }: any) {
   const [b, B] = useState(initial),
     task = useSubmit();
-  const { user } = useSession();
   const showSavedPopup = (enabled: boolean) => {
     const message = enabled
       ? "Đã bật nhắc lịch. Hãy cho phép thông báo trên điện thoại để nhận lời nhắc."
@@ -113,47 +109,6 @@ function SettingsForm({ initial, reload }: any) {
             }
           />
         )}
-      </Card>
-      <Card>
-        <Heading>Sao lưu dữ liệu cá nhân</Heading>
-        <Body>
-          Dữ liệu được lưu theo tài khoản {user?.email}. Bạn có thể lưu thêm bản
-          sao dự phòng để khôi phục xe, lịch bảo dưỡng, chi phí và ảnh khi cần.
-        </Body>
-        <Button
-          title="Lưu bản sao dự phòng"
-          secondary
-          disabled={task.busy}
-          onPress={() =>
-            task.run(async () => {
-              const data = await api("/backup");
-              await exportBackup(data);
-            }, "Đã mở nơi lưu hoặc chia sẻ bản sao dự phòng.")
-          }
-        />
-        <Button
-          title="Khôi phục dữ liệu"
-          secondary
-          disabled={task.busy}
-          onPress={() =>
-            task.run(async () => {
-              const backup = await chooseBackup();
-              if (!backup) return;
-              confirm(
-                "Khôi phục sẽ thay thế toàn bộ dữ liệu xe và bảo dưỡng hiện tại bằng bản sao bạn chọn. Hãy lưu một bản sao dự phòng trước khi tiếp tục. Bạn có muốn khôi phục không?",
-                () =>
-                  void task.run(async () => {
-                    await api("/backup/restore", "POST", backup);
-                    await reload();
-                  }, "Đã khôi phục dữ liệu."),
-              );
-            }, "")
-          }
-        />
-        <Body>
-          Chỉ chọn tệp được xuất từ AutoCare. Bạn có thể khôi phục vào tài khoản
-          đang đăng nhập; tệp sao lưu không chứa tài khoản và mật khẩu.
-        </Body>
       </Card>
       <Feedback task={task} />
     </>

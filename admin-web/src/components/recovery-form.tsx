@@ -1,8 +1,8 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import { Alert, Button, Form, Input } from "antd";
-import { ArrowUpOutlined } from "@ant-design/icons";
 import { api } from "@/lib/api";
 export function RecoveryForm({ reset = false }: { reset?: boolean }) {
   const [busy, B] = useState(false),
@@ -12,10 +12,8 @@ export function RecoveryForm({ reset = false }: { reset?: boolean }) {
     <div className="auth-small">
       <section className="auth-card">
         <Link href="/login" className="brand">
-          <span className="brand-mark">
-            <ArrowUpOutlined rotate={45} />
-          </span>
-          AutoCare<span className="brand-admin">ADMIN</span>
+          <Image className="brand-mark" src="/company-logo.png" alt="" width={29} height={29} />
+          Htsofttechcare<span className="brand-admin">ADMIN</span>
         </Link>
         <h1>{reset ? "Đặt lại mật khẩu" : "Quên mật khẩu?"}</h1>
         <p>

@@ -1,14 +1,24 @@
 @import "antd/dist/reset.css";
 :root {
-  --ink: #173e32;
-  --muted: #78867d;
+  --ink: #19322b;
+  --muted: #4d6259;
   --green: #1b5c49;
-  --bg: #f5f7f4;
-  --line: #e5eae3;
+  --bg: #f0f4f1;
+  --line: #d6e1da;
   --lime: #d9e8b9;
 }
 * {
   box-sizing: border-box;
+}
+@supports (scrollbar-gutter: stable) {
+  html {
+    scrollbar-gutter: stable;
+  }
+
+  /* The viewport already reserves the scrollbar space when a drawer locks scrolling. */
+  html body {
+    width: auto !important;
+  }
 }
 body {
   margin: 0;
@@ -45,10 +55,10 @@ p {
   margin-top: 0;
 }
 .eyebrow {
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 1.7px;
   font-weight: 700;
-  color: #839276;
+  color: #536c58;
   margin-bottom: 12px;
 }
 .admin-layout {
@@ -64,6 +74,7 @@ p {
   display: flex;
   flex-direction: column;
   z-index: 20;
+  overflow-y: auto;
 }
 .brand {
   display: flex;
@@ -79,14 +90,10 @@ p {
   color: #fff;
 }
 .brand-mark {
-  display: grid;
-  place-items: center;
   width: 29px;
   height: 29px;
-  border-radius: 8px;
-  background: #d9e8b9;
-  color: #204c37;
-  font-size: 21px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 .brand-admin {
   align-self: center;
@@ -99,10 +106,27 @@ p {
   border: 1px solid #486151;
   border-radius: 4px;
 }
+.sidebar .brand,
+.drawer-nav .brand {
+  font-size: 19px;
+  letter-spacing: -0.5px;
+}
+.sidebar .brand-mark,
+.drawer-nav .brand-mark,
+.login-brand .brand-mark {
+  padding: 3px;
+  background: #e1eee7;
+  border-radius: 6px;
+}
+.sidebar .brand-admin,
+.drawer-nav .brand-admin {
+  margin-left: 0;
+  color: #e2ede5;
+}
 .nav-section-label {
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: 1.6px;
-  color: #809e8e;
+  color: #b4cbbc;
   margin: 8px 14px 15px;
   font-weight: 600;
 }
@@ -112,13 +136,13 @@ p {
 .nav-link {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   min-height: 45px;
   padding: 11px 14px;
   margin-bottom: 5px;
   border-radius: 8px;
-  color: #b9cec0;
-  font-size: 12px;
+  color: #e2ede5;
+  font-size: 14px;
   transition:
     background 0.2s,
     color 0.2s;
@@ -150,32 +174,6 @@ p {
   margin-top: auto;
   padding-top: 30px;
 }
-.workspace-note {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  margin: 12px 11px 22px;
-  padding: 15px 12px;
-  background: #214739;
-  border: 1px solid #355644;
-  border-radius: 9px;
-  font-size: 10px;
-  line-height: 1.7;
-}
-.workspace-note .anticon {
-  color: #d9e8b9;
-  font-size: 18px;
-}
-.workspace-note strong {
-  color: #d8e4d6;
-  font-weight: 550;
-  font-size: 10px;
-}
-.workspace-note p {
-  font-size: 9px;
-  margin: 4px 0 0;
-  color: #8eac99;
-}
 .sidebar-user {
   width: 100%;
   background: none;
@@ -195,7 +193,7 @@ p {
 }
 .sidebar-user strong {
   display: block;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -203,8 +201,8 @@ p {
   max-width: 145px;
 }
 .sidebar-user small {
-  font-size: 9px;
-  color: #88a793;
+  font-size: 11px;
+  color: #bbd0c1;
 }
 .sidebar-user > .anticon {
   font-size: 9px;
@@ -226,11 +224,11 @@ p {
   display: flex;
   align-items: center;
   gap: 15px;
-  font-size: 11px;
+  font-size: 13px;
   white-space: nowrap;
 }
 .topbar-workspace {
-  color: #849188;
+  color: var(--muted);
 }
 .topbar-separator {
   color: #c2cbc1;
@@ -249,14 +247,14 @@ p {
   gap: 6px;
   border-right: 1px solid var(--line);
   padding-right: 22px;
-  font-size: 10px;
-  color: #829182;
+  font-size: 12px;
+  color: var(--muted);
 }
 .account-button {
   display: flex;
   gap: 9px;
   align-items: center;
-  font-size: 11px !important;
+  font-size: 13px !important;
 }
 .main-content {
   padding: 37px 40px 0;
@@ -271,19 +269,19 @@ p {
   margin-bottom: 29px;
 }
 .page-heading h1 {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 630;
   letter-spacing: -1px;
   margin: 0 0 8px;
 }
 .page-heading p {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.8;
   margin: 0;
 }
 .page-heading .ant-btn {
-  font-size: 12px;
+  font-size: 14px;
 }
 .page-footer {
   display: flex;
@@ -318,7 +316,7 @@ p {
 .panel-header p {
   margin: 6px 0 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 13px;
 }
 .panel-body {
   padding: 25px;
@@ -326,17 +324,17 @@ p {
 .panel-footer {
   padding: 15px 23px;
   border-top: 1px solid var(--line);
-  font-size: 11px;
+  font-size: 13px;
   color: var(--muted);
 }
 .table-panel .ant-table {
-  font-size: 12px;
+  font-size: 14px;
 }
 .table-panel .ant-table-cell {
   padding: 16px 20px !important;
 }
 .table-panel .ant-table-thead th {
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 0.4px;
   text-transform: uppercase;
   font-weight: 650 !important;
@@ -364,11 +362,11 @@ p {
 }
 .table-toolbar .ant-input-affix-wrapper,
 .table-toolbar .ant-select {
-  font-size: 12px;
+  font-size: 14px;
 }
 .table-count {
-  font-size: 11px;
-  color: #8a978b;
+  font-size: 13px;
+  color: var(--muted);
 }
 .name-cell {
   display: flex;
@@ -377,30 +375,35 @@ p {
 }
 .name-cell strong {
   display: block;
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 600;
-  color: #244437;
+  color: var(--ink);
 }
 .name-cell small {
   display: block;
-  font-size: 10px;
-  color: #89968c;
+  font-size: 12px;
+  color: var(--muted);
   margin-top: 4px;
 }
 .muted {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 13px;
 }
 .id-cell {
-  font-size: 11px;
-  color: #95a190;
+  font-size: 12px;
+  color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
 .status-tag {
-  font-size: 10px !important;
+  font-size: 12px !important;
   padding: 3px 8px !important;
-  border: 0 !important;
+  font-weight: 600;
   border-radius: 5px !important;
+}
+.ant-tag.status-tag.ant-tag-success {
+  color: #145337;
+  background: #e1f3e7;
+  border-color: #b4d8c1;
 }
 .status-dot {
   width: 5px;
@@ -415,7 +418,7 @@ p {
   background: #3a9669;
 }
 .role-tag {
-  font-size: 10px !important;
+  font-size: 12px !important;
   border: 0 !important;
   border-radius: 5px !important;
   padding: 3px 8px !important;
@@ -425,13 +428,13 @@ p {
   gap: 4px;
 }
 .action-buttons .ant-btn {
-  height: 30px;
-  width: 30px;
-  min-width: 30px;
-  color: #78897b;
+  height: 36px;
+  width: 36px;
+  min-width: 36px;
+  color: #3f6051;
 }
 .action-buttons .ant-btn-dangerous {
-  color: #c48074;
+  color: #a8382d;
 }
 .load-error {
   margin-bottom: 20px;
@@ -1188,6 +1191,22 @@ p {
   .topbar {
     height: 65px;
     padding: 0 18px;
+    gap: 8px;
+  }
+  .topbar-left {
+    min-width: 0;
+    gap: 8px;
+  }
+  .topbar-left strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .topbar-right {
+    flex-shrink: 0;
+  }
+  .topbar .mobile-menu-button,
+  .topbar .account-button {
+    min-height: 44px;
   }
   .topbar-workspace,
   .topbar-separator {
@@ -1213,7 +1232,7 @@ p {
     font-size: 24px;
   }
   .page-heading .ant-btn {
-    font-size: 11px;
+    font-size: 14px;
   }
   .quick-links {
     grid-template-columns: 1fr;
@@ -1251,10 +1270,10 @@ p {
   }
   .login-story {
     min-height: auto;
-    padding: 24px 27px;
+    padding: 20px 24px;
   }
   .login-story-main {
-    padding: 30px 0 15px;
+    display: none;
   }
   .login-story h1 {
     font-size: 38px;
@@ -1277,9 +1296,35 @@ p {
   }
   .login-brand {
     font-size: 24px;
+    padding: 0;
   }
   .login-form-side {
-    padding: 38px 25px;
+    padding: 32px 20px;
+  }
+  .login-form-wrap .ant-input,
+  .auth-card .ant-input {
+    font-size: 16px;
+  }
+  .login-form-wrap .ant-form-item-label label,
+  .login-form-wrap .ant-btn-primary,
+  .login-description,
+  .auth-card p {
+    font-size: 14px;
+  }
+  .login-description,
+  .login-security {
+    color: var(--muted);
+  }
+  .login-forgot a,
+  .auth-back {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-size: 14px;
+  }
+  .auth-back {
+    display: flex;
+    justify-content: center;
   }
   .login-lock {
     display: none;
@@ -1305,11 +1350,65 @@ p {
   .drawer-nav .sidebar-bottom {
     padding-top: 0;
   }
-  .drawer-nav .workspace-note {
-    display: none;
-  }
   .auth-card {
     padding: 28px;
+  }
+  .ant-drawer .ant-drawer-content-wrapper {
+    max-width: 100%;
+  }
+}
+@media (max-width: 480px) {
+  .main-content {
+    padding: 20px 12px 0;
+  }
+  .topbar {
+    padding-inline: 12px;
+  }
+  .topbar .account-button {
+    max-width: 148px;
+  }
+  .topbar .account-button > span:not(.ant-avatar):not(.anticon) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .page-heading {
+    flex-direction: column;
+  }
+  .page-heading > .ant-btn {
+    min-height: 44px;
+  }
+  .table-toolbar {
+    padding: 12px;
+    gap: 8px;
+  }
+  .table-toolbar > *,
+  .table-toolbar .ant-select {
+    max-width: 100%;
+    min-width: 0;
+  }
+  .table-panel .ant-table-cell {
+    padding: 12px !important;
+  }
+  .table-panel .ant-table-pagination {
+    padding-inline: 10px;
+  }
+  .panel-header,
+  .panel-body,
+  .panel-footer {
+    padding-inline: 14px;
+  }
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+  .auth-small {
+    padding: 24px 12px;
+  }
+  .auth-card {
+    padding: 20px 16px;
+  }
+  .auth-card .brand {
+    font-size: 20px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

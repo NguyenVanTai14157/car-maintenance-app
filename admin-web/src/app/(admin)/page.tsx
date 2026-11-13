@@ -22,7 +22,7 @@ export default function DashboardPage() {
     <>
       <PageHeading
         title="Tổng quan hệ thống"
-        description="Một góc nhìn rõ ràng về người dùng và phương tiện trên AutoCare."
+        description="Một góc nhìn rõ ràng về người dùng và phương tiện trên Htsofttechcare."
         action={
           <Button
             icon={<ReloadOutlined />}
@@ -41,7 +41,7 @@ export default function DashboardPage() {
           <p>
             Quản lý tài khoản và chuẩn hóa danh mục phương tiện,
             <br />
-            để mỗi hành trình cùng AutoCare thêm an tâm.
+            để mỗi hành trình cùng Htsofttechcare thêm an tâm.
           </p>
         </div>
         <Link href="/users">
@@ -104,7 +104,7 @@ export default function DashboardPage() {
               <p>Phân bố phương tiện theo hãng xe đã ghi nhận</p>
             </div>
             <Link className="muted" href="/vehicles">
-              Xem tất cả ↗
+              Xem tất cả
             </Link>
           </div>
           <div className="panel-body">

@@ -6,7 +6,7 @@ export async function createFirstAdmin() {
   const c = contact({ email: process.env.ADMIN_EMAIL });
   if (!c.email) fail("Cấu hình ADMIN_EMAIL.");
   const name = text(
-      process.env.ADMIN_NAME || "Quản trị AutoCare",
+      process.env.ADMIN_NAME || "Quản trị Htsofttechcare",
       "Họ tên",
       100,
     ),

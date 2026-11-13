@@ -66,7 +66,7 @@ export async function api(path: string, method = "GET", body?: unknown) {
       e.message?.startsWith("fetch failed:")
     )
       throw new Error(
-        "Chưa kết nối được với AutoCare. Bạn hãy kiểm tra kết nối mạng rồi thử lại.",
+        "Chưa kết nối được với Htsofttechcare. Bạn hãy kiểm tra kết nối mạng rồi thử lại.",
       );
     throw e;
   } finally {

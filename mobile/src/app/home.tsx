@@ -1,4 +1,13 @@
-import { Pressable, Text, useWindowDimensions, View } from "react-native";
+import { useState } from "react";
+import {
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { matchingVehicleIds } from "../utils/maintenance-overview";
 import { dayLabel, PlanCard } from "../components/personal";
 import {
@@ -57,10 +66,12 @@ export default function Home() {
     <Screen
       wide
       showBack={false}
+      showBottomNav
       title="Xe khỏe, hành trình an tâm"
-      subtitle="Lịch bảo dưỡng cá nhân của bạn"
       refresh={q.reload}
+      planCount={d ? plans.length : undefined}
     >
+      <HomeBanners />
       <ErrorText text={q.error} />
       {d && (
         <>
@@ -115,52 +126,6 @@ export default function Home() {
               </View>
             </Card>
           </Pressable>
-          <View style={s.grid}>
-            {[
-              ["Xe của tôi", "/vehicles"],
-              ["Lịch bảo dưỡng", "/plans"],
-              ["Thêm lần bảo dưỡng", "/record-edit"],
-              ["Lịch sử", "/records"],
-              ["Hạng mục", "/categories"],
-              ["Chi phí", "/costs"],
-              ["Cài đặt & sao lưu", "/settings"],
-              ["Tài khoản", "/profile"],
-            ].map(([title, path]) => (
-              <View key={path} style={{ width: tileWidth }}>
-                <Button title={title} secondary onPress={() => go(path)} />
-                {path === "/plans" && (
-                  <View
-                    pointerEvents="none"
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      right: 0,
-                      minWidth: 24,
-                      minHeight: 24,
-                      paddingHorizontal: 6,
-                      borderRadius: 12,
-                      backgroundColor: "#21604D",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      borderWidth: 2,
-                      borderColor: "#F3F6F4",
-                    }}
-                  >
-                    <Text
-                      accessibilityLabel={`${plans.length} lịch đang theo dõi`}
-                      style={{
-                        color: "white",
-                        fontSize: 12,
-                        fontWeight: "700",
-                      }}
-                    >
-                      {plans.length}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            ))}
-          </View>
           <Heading>Cần chú ý</Heading>
           {[
             ...d.overdue,
@@ -194,3 +159,81 @@ export default function Home() {
     </Screen>
   );
 }
+
+const banners = [
+  {
+    title: "Đến lúc chăm xe?",
+    action: "Xem lịch bảo dưỡng",
+    path: "/plans",
+    background: "#174C40",
+    image: require("../../assets/maintenance-banner.jpg"),
+  },
+  {
+    title: "Vừa bảo dưỡng xe?",
+    action: "Ghi lại lần bảo dưỡng",
+    path: "/record-edit",
+    background: "#173B55",
+  },
+] as const;
+
+function HomeBanners() {
+  const [width, setWidth] = useState(0);
+  const cardWidth = Math.round(width * 0.9);
+
+  return (
+    <View onLayout={({ nativeEvent }) => setWidth(nativeEvent.layout.width)}>
+      {cardWidth > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          decelerationRate="fast"
+          snapToInterval={cardWidth + 10}
+          contentContainerStyle={bannerStyles.row}
+        >
+          {banners.map((banner) => (
+            <Pressable
+              key={banner.path}
+              accessibilityRole="button"
+              accessibilityLabel={`${banner.title} ${banner.action}`}
+              onPress={() => go(banner.path)}
+              style={[
+                bannerStyles.card,
+                { width: cardWidth, backgroundColor: banner.background },
+              ]}
+            >
+              <View style={bannerStyles.copy}>
+                <Text style={bannerStyles.title}>{banner.title}</Text>
+                <Text style={bannerStyles.action}>{banner.action}</Text>
+              </View>
+              {"image" in banner && width >= 320 && (
+                <View style={bannerStyles.imageFrame}>
+                  <Image
+                    source={banner.image}
+                    style={bannerStyles.image}
+                    resizeMode="cover"
+                    accessible={false}
+                  />
+                </View>
+              )}
+            </Pressable>
+          ))}
+        </ScrollView>
+      )}
+    </View>
+  );
+}
+
+const bannerStyles = StyleSheet.create({
+  row: { gap: 10 },
+  card: {
+    minHeight: 96,
+    flexDirection: "row",
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  copy: { flex: 1, paddingHorizontal: 14, paddingVertical: 10, justifyContent: "center", gap: 5 },
+  title: { color: "white", fontSize: 19, fontWeight: "800" },
+  action: { color: "#D7E9AA", fontSize: 13, fontWeight: "700" },
+  imageFrame: { width: "35%" },
+  image: { position: "absolute", width: "100%", height: "100%" },
+});

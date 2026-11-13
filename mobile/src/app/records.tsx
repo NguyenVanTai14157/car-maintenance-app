@@ -1,12 +1,13 @@
 import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { dayLabel, Select, VehicleIdentifier } from "../components/personal";
+import { View } from "react-native";
+import { dayLabel, VehicleIdentifier } from "../components/personal";
 import { DateField } from "../components/date-field";
+import { FilterDropdown } from "../components/filter-dropdown";
 import {
   Body,
   Button,
   Card,
-  Chips,
   Empty,
   ErrorText,
   Field,
@@ -61,32 +62,41 @@ function HistoryContent({
           go("/record-edit" + (vehicle ? "?vehicle=" + vehicle : ""))
         }
       />
-      <Chips
-        value={withCost}
-        onChange={setWithCost}
+      <FilterDropdown
+        label="Chi phí"
+        value={withCost ? "with-cost" : "all"}
+        onChange={(value: string) => setWithCost(value === "with-cost")}
         options={[
-          { label: "Tất cả lịch sử", value: false },
-          { label: "Có phát sinh chi phí", value: true },
+          { label: "Tất cả lịch sử", value: "all" },
+          { label: "Có phát sinh chi phí", value: "with-cost" },
         ]}
       />
-      <Select
-        label="Theo xe"
-        value={vehicle}
-        onChange={V}
-        items={[
-          { id: 0, name: "Tất cả xe" },
-          ...(vehicles.data || []).map((v: any) => ({
-            id: v.id,
-            name: v.plate || v.brand + " " + v.model,
-          })),
-        ]}
-      />
-      <Select
-        label="Theo hạng mục"
-        value={category}
-        onChange={C}
-        items={[{ id: 0, name: "Tất cả hạng mục" }, ...(cats.data || [])]}
-      />
+      <View style={styles.filterRow}>
+        <FilterDropdown
+          label="Theo xe"
+          value={vehicle}
+          onChange={V}
+          options={[
+            { value: 0, label: "Tất cả xe" },
+            ...(vehicles.data || []).map((v: any) => ({
+              value: v.id,
+              label: v.plate || `${v.brand} ${v.model}`,
+            })),
+          ]}
+        />
+        <FilterDropdown
+          label="Theo hạng mục"
+          value={category}
+          onChange={C}
+          options={[
+            { value: 0, label: "Tất cả hạng mục" },
+            ...(cats.data || []).map((item: any) => ({
+              value: item.id,
+              label: item.name,
+            })),
+          ]}
+        />
+      </View>
       <DateField
         label="Từ ngày"
         maximum={to || undefined}
@@ -143,3 +153,10 @@ function HistoryContent({
     </Screen>
   );
 }
+
+const styles = {
+  filterRow: {
+    flexDirection: "row" as const,
+    gap: 12,
+  },
+};

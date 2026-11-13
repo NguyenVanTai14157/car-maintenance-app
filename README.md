@@ -1,4 +1,4 @@
-# AutoCare — lịch bảo dưỡng ô tô cá nhân
+# Htsofttechcare — lịch bảo dưỡng ô tô cá nhân
 
 App điện thoại dành cho **Người dùng cá nhân**, web riêng dành cho **Quản trị viên**. Mỗi tài khoản quản lý xe, kế hoạch, lịch sử và chi phí riêng. React Native/Expo Router SDK 58 + TypeScript, NestJS 11 + PostgreSQL 17; cập nhật giữa các thiết bị cùng tài khoản qua Socket.IO.
 
@@ -24,7 +24,7 @@ cd D:\car-maintenance-app\mobile
 npm start -- --lan
 ```
 
-Giữ hai terminal chạy, điện thoại và laptop cùng Wi-Fi. Android mở Expo Go quét QR; iPhone quét bằng Camera rồi mở Expo Go. Nếu Expo Go yêu cầu, đăng nhập cùng tài khoản Expo với Expo CLI. Đây là tài khoản công cụ; tài khoản AutoCare đăng ký riêng trong ứng dụng. Máy ảo Android: chọn terminal Expo và bấm `a` (Shift+A chọn thiết bị nếu mở nhiều máy ảo). Fast Refresh cập nhật khi lưu; `r` tải lại toàn bộ. Không cần chạy nhiều backend cho nhiều điện thoại.
+Giữ hai terminal chạy, điện thoại và laptop cùng Wi-Fi. Android mở Expo Go quét QR; iPhone quét bằng Camera rồi mở Expo Go. Nếu Expo Go yêu cầu, đăng nhập cùng tài khoản Expo với Expo CLI. Đây là tài khoản công cụ; tài khoản Htsofttechcare đăng ký riêng trong ứng dụng. Máy ảo Android: chọn terminal Expo và bấm `a` (Shift+A chọn thiết bị nếu mở nhiều máy ảo). Fast Refresh cập nhật khi lưu; `r` tải lại toàn bộ. Không cần chạy nhiều backend cho nhiều điện thoại.
 
 App tự dùng địa chỉ laptop từ Expo, cổng API 3000. Chỉ cấu hình `EXPO_PUBLIC_API_URL` trong `mobile/.env` khi cần ghi đè; máy ảo có thể dùng `http://10.0.2.2:3000`. Khi đổi .env cần khởi động lại Expo. QR tunnel chỉ chuyển gói Expo, không tự mở backend ra Internet.
 

@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
+  BrandMark,
   Button,
   Card,
   colors,
@@ -66,7 +67,7 @@ export default function Login() {
           contentContainerStyle={s.page}
           keyboardShouldPersistTaps="handled"
         >
-          <Text style={s.brand}>↗ AutoCare</Text>
+          <BrandMark />
           <View style={s.hero}>
             <Text style={s.heroTitle}>Chăm xe của bạn, theo cách của bạn.</Text>
             <Text style={s.heroText}>

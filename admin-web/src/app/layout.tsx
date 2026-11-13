@@ -3,9 +3,9 @@ import { AntdRegistry } from "@ant-design/nextjs-registry";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 export const metadata: Metadata = {
-  title: { default: "AutoCare · Quản trị", template: "%s · AutoCare" },
+  title: { default: "Htsofttechcare · Quản trị", template: "%s · Htsofttechcare" },
   description:
-    "Không gian quản trị người dùng, phương tiện và danh mục AutoCare.",
+    "Không gian quản trị người dùng, phương tiện và danh mục Htsofttechcare.",
 };
 export default function RootLayout({
   children,

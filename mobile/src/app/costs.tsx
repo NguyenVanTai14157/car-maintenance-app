@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { dayLabel, Select, VehicleIdentifier } from "../components/personal";
-import { Pressable, Text } from "react-native";
+import { dayLabel, VehicleIdentifier } from "../components/personal";
+import { FilterDropdown } from "../components/filter-dropdown";
+import { Pressable, Text, View } from "react-native";
 import { DateField } from "../components/date-field";
 import { PeriodPicker } from "../components/period-picker";
 import {
@@ -55,24 +56,32 @@ export default function Costs() {
       subtitle="Các khoản đã chi cho bảo dưỡng, bao gồm cả xe đã lưu trữ."
       refresh={q.reload}
     >
-      <Select
-        label="Xe"
-        value={vehicle}
-        onChange={V}
-        items={[
-          { id: 0, name: "Tất cả xe" },
-          ...(vs.data || []).map((v: any) => ({
-            id: v.id,
-            name: v.plate || v.brand + " " + v.model,
-          })),
-        ]}
-      />
-      <Select
-        label="Hạng mục"
-        value={category}
-        onChange={C}
-        items={[{ id: 0, name: "Tất cả hạng mục" }, ...(cats.data || [])]}
-      />
+      <View style={styles.filterRow}>
+        <FilterDropdown
+          label="Theo xe"
+          value={vehicle}
+          onChange={V}
+          options={[
+            { value: 0, label: "Tất cả xe" },
+            ...(vs.data || []).map((v: any) => ({
+              value: v.id,
+              label: v.plate || v.brand + " " + v.model,
+            })),
+          ]}
+        />
+        <FilterDropdown
+          label="Theo hạng mục"
+          value={category}
+          onChange={C}
+          options={[
+            { value: 0, label: "Tất cả hạng mục" },
+            ...(cats.data || []).map((item: any) => ({
+              value: item.id,
+              label: item.name,
+            })),
+          ]}
+        />
+      </View>
       <DateField
         label="Từ ngày"
         maximum={to || undefined}
@@ -149,3 +158,7 @@ export default function Costs() {
     </Screen>
   );
 }
+
+const styles = {
+  filterRow: { flexDirection: "row" as const, gap: 12 },
+};

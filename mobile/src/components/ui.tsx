@@ -1,11 +1,12 @@
 import * as ImagePicker from "expo-image-picker";
-import { Redirect, router } from "expo-router";
+import { Redirect, router, usePathname } from "expo-router";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Image,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   RefreshControl,
@@ -51,6 +52,21 @@ export const date = (v: any) =>
 export function go(path: string) {
   router.push(path as any);
 }
+export function BrandMark() {
+  return (
+    <View style={s.brandMark}>
+      <Image
+        source={require("../../assets/company-logo.png")}
+        style={s.brandLogo}
+        resizeMode="contain"
+        accessible={false}
+      />
+      <Text style={s.brand} numberOfLines={1} adjustsFontSizeToFit>
+        Htsofttechcare
+      </Text>
+    </View>
+  );
+}
 export function Screen({
   title,
   subtitle,
@@ -60,6 +76,8 @@ export function Screen({
   showBack = true,
   wide = false,
   onBack,
+  planCount,
+  showBottomNav,
 }: {
   title: string;
   subtitle?: string;
@@ -69,8 +87,11 @@ export function Screen({
   showBack?: boolean;
   wide?: boolean;
   onBack?: () => void;
+  planCount?: number;
+  showBottomNav?: boolean;
 }) {
   const { user, loading } = useSession();
+  const pathname = usePathname();
   if (loading) return <ActivityIndicator style={{ flex: 1 }} />;
   if (!user) return <Redirect href="/login" />;
   if (allowed && !allowed.includes(user.role)) return <Redirect href="/home" />;
@@ -80,7 +101,7 @@ export function Screen({
       edges={["top", "bottom"]}
     >
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        style={{ flex: 1, minHeight: 0 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <View style={s.header}>
@@ -99,14 +120,20 @@ export function Screen({
           ) : (
             <View style={{ width: 20 }} />
           )}
-          <Pressable onPress={() => router.replace("/home")}>
-            <Text style={s.brand}>↗ AutoCare</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Htsofttechcare, về trang chủ"
+            onPress={() => router.replace("/home")}
+            style={{ flexShrink: 1, marginHorizontal: 8 }}
+          >
+            <BrandMark />
           </Pressable>
           <Pressable onPress={() => go("/notifications")}>
             <Text style={s.smallLink}>Thông báo</Text>
           </Pressable>
         </View>
         <ScrollView
+          style={{ flex: 1, minHeight: 0 }}
           keyboardShouldPersistTaps="handled"
           overScrollMode="never"
           bounces={false}
@@ -121,13 +148,138 @@ export function Screen({
           {subtitle && <Text style={s.subtitle}>{subtitle}</Text>}
           {children}
           <Text style={s.footer}>
-            AUTOCARE · {roles[user.role]?.toUpperCase()}
+            Htsofttechcare · {roles[user.role]?.toUpperCase()}
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>
+      {(showBottomNav ?? (!onBack && mainNavPaths.has(pathname))) && (
+        <BottomNavigation pathname={pathname} planCount={planCount} />
+      )}
     </SafeAreaView>
   );
 }
+
+const primaryNav = [
+  { path: "/home", label: "Trang chủ", icon: require("../../assets/navigation/home.png") },
+  { path: "/vehicles", label: "Xe của tôi", icon: require("../../assets/navigation/car.png") },
+  { path: "/plans", label: "Lịch", icon: require("../../assets/navigation/calendar.png") },
+  { path: "/records", label: "Lịch sử", icon: require("../../assets/navigation/history.png") },
+] as const;
+
+const moreNav = [
+  { path: "/record-edit", label: "Thêm lần bảo dưỡng" },
+  { path: "/categories", label: "Hạng mục" },
+  { path: "/costs", label: "Chi phí" },
+  { path: "/settings", label: "Cài đặt" },
+  { path: "/profile", label: "Tài khoản" },
+] as const;
+
+const mainNavPaths = new Set<string>([
+  ...primaryNav.map(({ path }) => path),
+  ...moreNav.filter(({ path }) => path !== "/record-edit").map(({ path }) => path),
+]);
+
+function BottomNavigation({
+  pathname,
+  planCount,
+}: {
+  pathname: string;
+  planCount?: number;
+}) {
+  const [moreOpen, setMoreOpen] = useState(false);
+  const closeMore = () => setMoreOpen(false);
+  const moreSelected = moreNav.some(({ path }) => path === pathname);
+
+  return (
+    <View style={bottomNav.bar}>
+      <View style={bottomNav.row}>
+        {primaryNav.map(({ path, label, icon }) => {
+          const selected = pathname === path;
+          const hasCount = path === "/plans" && !!planCount;
+          return (
+            <Pressable
+              key={path}
+              accessibilityRole="tab"
+              accessibilityState={{ selected }}
+              accessibilityLabel={hasCount ? `Lịch bảo dưỡng, ${planCount} lịch đang theo dõi` : path === "/plans" ? "Lịch bảo dưỡng" : label}
+              style={[bottomNav.tab, selected && bottomNav.selected]}
+              onPress={() => { if (!selected) router.navigate(path); }}
+            >
+              <Image source={icon} style={bottomNav.icon} accessible={false} />
+              <Text style={bottomNav.label}>{label}</Text>
+              {hasCount && (
+                <Text style={bottomNav.badge}>{planCount! > 99 ? "99+" : planCount}</Text>
+              )}
+            </Pressable>
+          );
+        })}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Thêm chức năng"
+          accessibilityState={{ expanded: moreOpen }}
+          style={[bottomNav.tab, moreSelected && bottomNav.selected]}
+          onPress={() => setMoreOpen(true)}
+        >
+          <Image
+            source={require("../../assets/navigation/more.png")}
+            style={bottomNav.icon}
+            accessible={false}
+          />
+          <Text style={bottomNav.label}>Thêm</Text>
+        </Pressable>
+      </View>
+      <Modal transparent visible={moreOpen} animationType="slide" onRequestClose={closeMore}>
+        <View style={bottomNav.overlay}>
+          <Pressable
+            accessibilityLabel="Đóng danh sách chức năng"
+            accessibilityRole="button"
+            style={StyleSheet.absoluteFill}
+            onPress={closeMore}
+          />
+          <SafeAreaView edges={["bottom"]} style={bottomNav.sheet}>
+            <View style={bottomNav.sheetHeader}>
+              <Heading>Thêm chức năng</Heading>
+              <Pressable accessibilityRole="button" onPress={closeMore} hitSlop={8}>
+                <Text style={bottomNav.label}>Đóng</Text>
+              </Pressable>
+            </View>
+            <ScrollView>
+              {moreNav.map(({ path, label }) => (
+                <Pressable
+                  key={path}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: pathname === path }}
+                  style={[bottomNav.option, pathname === path && bottomNav.selected]}
+                  onPress={() => {
+                    closeMore();
+                    if (pathname !== path) router.navigate(path);
+                  }}
+                >
+                  <Text style={bottomNav.optionText}>{label}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </SafeAreaView>
+        </View>
+      </Modal>
+    </View>
+  );
+}
+
+const bottomNav = StyleSheet.create({
+  bar: { flexShrink: 0, backgroundColor: "white", borderTopWidth: 1, borderColor: colors.line },
+  row: { flexDirection: "row", width: "100%", maxWidth: 600, alignSelf: "center", padding: 6, gap: 4 },
+  tab: { flex: 1, minHeight: 52, alignItems: "center", justifyContent: "center", borderRadius: 12 },
+  selected: { backgroundColor: "#E7F2E8" },
+  icon: { width: 22, height: 22, tintColor: colors.green },
+  label: { color: colors.green, fontSize: 11, fontWeight: "700", textAlign: "center" },
+  badge: { position: "absolute", top: 2, right: 2, color: "white", backgroundColor: colors.green, borderRadius: 10, paddingHorizontal: 4, fontSize: 10, fontWeight: "700" },
+  overlay: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(15, 34, 28, 0.45)" },
+  sheet: { backgroundColor: colors.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 18, paddingTop: 16, paddingBottom: 8, maxHeight: "80%" },
+  sheetHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
+  option: { minHeight: 48, paddingHorizontal: 12, justifyContent: "center", borderRadius: 10 },
+  optionText: { color: colors.ink, fontSize: 15, fontWeight: "600" },
+});
 export function Card({ children }: { children: React.ReactNode }) {
   return <View style={s.card}>{children}</View>;
 }
@@ -420,7 +572,15 @@ export const s = StyleSheet.create({
     borderColor: colors.line,
   },
   back: { fontSize: 32, color: colors.ink },
-  brand: { fontSize: 22, fontWeight: "800", color: colors.ink },
+  brandMark: { flexDirection: "row", alignItems: "center", gap: 8 },
+  brandLogo: { width: 29, height: 34, borderRadius: 5 },
+  brand: {
+    flexShrink: 1,
+    fontSize: 20,
+    fontWeight: "700",
+    letterSpacing: -0.35,
+    color: "#173B55",
+  },
   smallLink: { color: colors.green, fontSize: 13, fontWeight: "600" },
   page: {
     padding: 20,

@@ -1,11 +1,11 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Alert, Button, Form, Input } from "antd";
 import {
   ArrowRightOutlined,
-  ArrowUpOutlined,
   LockOutlined,
   MailOutlined,
   SafetyCertificateOutlined,
@@ -21,10 +21,8 @@ export function LoginForm() {
     <div className="login-page">
       <section className="login-story">
         <Link href="/login" className="brand login-brand">
-          <span className="brand-mark">
-            <ArrowUpOutlined rotate={45} />
-          </span>
-          AutoCare<span className="brand-admin">ADMIN</span>
+          <Image className="brand-mark" src="/company-logo.png" alt="" width={29} height={29} />
+          Htsofttechcare<span className="brand-admin">ADMIN</span>
         </Link>
         <div className="login-story-main">
           <span className="login-eyebrow">
@@ -37,7 +35,7 @@ export function LoginForm() {
           </h1>
           <p>
             Quản lý người dùng và phương tiện trong một không gian rõ ràng, kết
-            nối cùng AutoCare.
+            nối cùng Htsofttechcare.
           </p>
           <div className="login-illustration" aria-hidden="true">
             <div className="orbit orbit-one" />
@@ -56,7 +54,7 @@ export function LoginForm() {
           </div>
         </div>
         <div className="login-story-footer">
-          <span>↗</span> Vận hành gọn gàng. Chăm xe chu đáo.
+          Vận hành gọn gàng. Chăm xe chu đáo.
         </div>
       </section>
       <section className="login-form-side">
@@ -143,7 +141,7 @@ export function LoginForm() {
           </div>
         </div>
         <div className="login-bottom">
-          AUTOCARE ADMIN <span>Chăm xe chu đáo · An tâm mỗi ngày</span>
+          Htsofttechcare ADMIN <span>Chăm xe chu đáo · An tâm mỗi ngày</span>
         </div>
       </section>
     </div>

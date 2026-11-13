@@ -2,7 +2,7 @@ import * as DocumentPicker from "expo-document-picker";
 import { File, Paths } from "expo-file-system";
 import * as Sharing from "expo-sharing";
 export async function exportBackup(data: unknown) {
-  const file = new File(Paths.cache, "autocare-personal-backup.json");
+  const file = new File(Paths.cache, "htsofttechcare-personal-backup.json");
   file.create({ overwrite: true });
   await file.write(JSON.stringify(data, null, 2));
   if (!(await Sharing.isAvailableAsync()))
@@ -10,7 +10,7 @@ export async function exportBackup(data: unknown) {
   await Sharing.shareAsync(file.uri, {
     mimeType: "application/json",
     UTI: "public.json",
-    dialogTitle: "Lưu bản sao lưu AutoCare",
+    dialogTitle: "Lưu bản sao lưu Htsofttechcare",
   });
 }
 export async function chooseBackup() {
@@ -31,9 +31,9 @@ export async function chooseBackup() {
   try {
     backup = JSON.parse(contents);
   } catch {
-    throw Error("Tệp JSON bị lỗi hoặc chưa được lưu hoàn tất. Hãy xuất lại bản sao từ AutoCare.");
+    throw Error("Tệp JSON bị lỗi hoặc chưa được lưu hoàn tất. Hãy xuất lại bản sao từ Htsofttechcare.");
   }
   if (backup?.kind !== "autocare-personal" || backup?.version !== 1)
-    throw Error("Tệp này không phải bản sao AutoCare tương thích. Hãy chọn đúng tệp sao lưu.");
+    throw Error("Tệp này không phải bản sao Htsofttechcare tương thích. Hãy chọn đúng tệp sao lưu.");
   return backup;
 }

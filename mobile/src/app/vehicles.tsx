@@ -5,12 +5,12 @@ import {
   maintenanceFilters,
   matchingVehicleIds,
 } from "../utils/maintenance-overview";
-import { Alert, BackHandler, Platform } from "react-native";
+import { Alert, BackHandler, Platform, View } from "react-native";
+import { FilterDropdown } from "../components/filter-dropdown";
 import {
   Body,
   Button,
   Card,
-  Chips,
   confirm,
   Empty,
   ErrorText,
@@ -109,31 +109,35 @@ export default function Vehicles() {
           E(null);
         }}
       />
-      <Chips
-        value={archived}
-        onChange={(value) => {
-          A(value);
-          setFilter("all");
-        }}
-        options={[
-          { label: "Đang sử dụng", value: false },
-          { label: "Đã lưu trữ", value: true },
-        ]}
-      />
-      <Chips
-        value={filter}
-        onChange={(value) => {
-          setFilter(value);
-          A(false);
-        }}
-        options={[
-          { label: "Tất cả xe", value: "all" },
-          ...Object.entries(maintenanceFilters).map(([value, label]) => ({
-            value,
-            label,
-          })),
-        ]}
-      />
+      <View style={styles.filterRow}>
+        <FilterDropdown
+          label="Danh sách xe"
+          value={archived ? "archived" : "current"}
+          onChange={(value: string) => {
+            A(value === "archived");
+            setFilter("all");
+          }}
+          options={[
+            { label: "Đang sử dụng", value: "current" },
+            { label: "Đã lưu trữ", value: "archived" },
+          ]}
+        />
+        <FilterDropdown
+          label="Theo bảo dưỡng"
+          value={filter}
+          onChange={(value: string) => {
+            setFilter(value);
+            A(false);
+          }}
+          options={[
+            { label: "Tất cả xe", value: "all" },
+            ...Object.entries(maintenanceFilters).map(([value, label]) => ({
+              value,
+              label,
+            })),
+          ]}
+        />
+      </View>
       {list.map((v: any) => (
         <VehicleCard
           key={v.id}
@@ -160,6 +164,11 @@ export default function Vehicles() {
     </Screen>
   );
 }
+
+const styles = {
+  filterRow: { flexDirection: "row" as const, gap: 12 },
+};
+
 function VehicleCard({ vehicle: v, justSaved, edit, reload, status }: any) {
   const task = useSubmit();
   return (

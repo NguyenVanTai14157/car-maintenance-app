@@ -34,6 +34,7 @@ export default function RecordEdit() {
   return (
     <Screen
       title={params.id ? "Sửa thông tin bảo dưỡng" : "Thêm lần bảo dưỡng"}
+      showBottomNav={!params.id}
     >
       {records.data && plans.data && vehicles.data && cats.data ? (
         (params.id && !current) || (params.plan && !plan) ? (

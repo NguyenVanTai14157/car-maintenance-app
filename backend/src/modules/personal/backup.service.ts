@@ -23,7 +23,7 @@ export class BackupService {
   }
   restore(uid: number, b: any) {
     if (b?.kind !== "autocare-personal" || b.version !== 1)
-      fail("File không phải bản sao lưu AutoCare tương thích.");
+      fail("File không phải bản sao lưu Htsofttechcare tương thích.");
     if (JSON.stringify(b).length > 28000000) fail("File sao lưu quá lớn.");
     for (const k of ["vehicles", "categories", "plans", "records"])
       if (

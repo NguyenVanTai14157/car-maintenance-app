@@ -4,6 +4,7 @@ import { ScrollView, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   Body,
+  BrandMark,
   Button,
   Card,
   colors,
@@ -22,7 +23,7 @@ export default function Forgot() {
         contentContainerStyle={s.page}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={s.brand}>↗ AutoCare</Text>
+        <BrandMark />
         <Card>
           <Text style={s.title}>Quên mật khẩu</Text>
           <Body>Nhập email đã đăng ký để nhận mã khôi phục có thời hạn.</Body>

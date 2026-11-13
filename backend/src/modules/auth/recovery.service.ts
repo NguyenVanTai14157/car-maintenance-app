@@ -79,7 +79,7 @@ export class RecoveryRepository {
 @Injectable()
 export class RecoveryMailer {
   async send(email: string, token: string) {
-    const content = `Bạn yêu cầu đặt lại mật khẩu AutoCare. Mã dùng một lần, hết hạn sau 15 phút:\n\n${token}\n\nNếu không yêu cầu, bạn có thể bỏ qua email này.`;
+    const content = `Bạn yêu cầu đặt lại mật khẩu Htsofttechcare. Mã dùng một lần, hết hạn sau 15 phút:\n\n${token}\n\nNếu không yêu cầu, bạn có thể bỏ qua email này.`;
     if (
       process.env.MAIL_MODE === "preview" &&
       process.env.NODE_ENV !== "production"
@@ -91,7 +91,7 @@ export class RecoveryMailer {
         JSON.stringify(
           {
             to: email,
-            subject: "Khôi phục mật khẩu AutoCare",
+            subject: "Khôi phục mật khẩu Htsofttechcare",
             text: content,
             token,
           },
@@ -116,7 +116,7 @@ export class RecoveryMailer {
     await transport.sendMail({
       from: process.env.MAIL_FROM,
       to: email,
-      subject: "Khôi phục mật khẩu AutoCare",
+      subject: "Khôi phục mật khẩu Htsofttechcare",
       text: content,
     });
   }

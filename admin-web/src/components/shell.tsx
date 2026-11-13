@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { App, Avatar, Button, Dropdown, Drawer } from "antd";
@@ -13,7 +14,6 @@ import {
   HistoryOutlined,
   SettingOutlined,
   LogoutOutlined,
-  ArrowUpOutlined,
   MenuOutlined,
   DownOutlined,
   SafetyCertificateOutlined,
@@ -64,10 +64,8 @@ export function Shell({
   const nav = (
     <>
       <Link href="/" className="brand">
-        <span className="brand-mark">
-          <ArrowUpOutlined rotate={45} />
-        </span>
-        AutoCare<span className="brand-admin">ADMIN</span>
+        <Image className="brand-mark" src="/company-logo.png" alt="" width={29} height={29} />
+        Htsofttechcare<span className="brand-admin">ADMIN</span>
       </Link>
       <div className="nav-section-label">ĐIỀU HÀNH</div>
       <nav>
@@ -92,13 +90,6 @@ export function Shell({
         ))}
       </nav>
       <div className="sidebar-bottom">
-        <div className="workspace-note">
-          <SafetyCertificateOutlined />
-          <div>
-            <strong>Dữ liệu đúng. Vận hành tốt.</strong>
-            <p>Không gian dành cho quản trị viên</p>
-          </div>
-        </div>
         <Link
           className={"nav-link " + (path === "/account" ? "selected" : "")}
           href="/account"
@@ -151,7 +142,7 @@ export function Shell({
             <strong>
               {path === "/account"
                 ? "Tài khoản"
-                : links.find((l) => l.href === path)?.label || "AutoCare"}
+                : links.find((l) => l.href === path)?.label || "Htsofttechcare"}
             </strong>
           </div>
           <div className="topbar-right">
@@ -195,7 +186,7 @@ export function Shell({
         <main className="main-content">
           {children}
           <footer className="page-footer">
-            <span>AutoCare · Chăm xe chu đáo</span>
+            <span>Htsofttechcare · Chăm xe chu đáo</span>
             <span>Quản trị hệ thống</span>
           </footer>
         </main>

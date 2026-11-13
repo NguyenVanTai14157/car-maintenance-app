@@ -351,7 +351,7 @@ export default function UsersPage() {
           <div className="form-note">
             {editing
               ? "Thông tin thay đổi được lưu vào tài khoản của người dùng. Đổi email, quyền hoặc trạng thái sẽ yêu cầu họ đăng nhập lại."
-              : "Tài khoản được tạo có thể đăng nhập ứng dụng AutoCare. Mật khẩu ban đầu cần ít nhất 8 ký tự."}
+              : "Tài khoản được tạo có thể đăng nhập ứng dụng Htsofttechcare. Mật khẩu ban đầu cần ít nhất 8 ký tự."}
           </div>
           <Form.Item
             name="name"

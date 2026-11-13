@@ -4,6 +4,7 @@ import { ScrollView, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   Body,
+  BrandMark,
   Button,
   Card,
   colors,
@@ -25,7 +26,7 @@ export default function Reset() {
         contentContainerStyle={s.page}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={s.brand}>↗ AutoCare</Text>
+        <BrandMark />
         <Card>
           <Text style={s.title}>Đặt lại mật khẩu</Text>
           <Body>

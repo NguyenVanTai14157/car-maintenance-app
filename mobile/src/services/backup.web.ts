@@ -4,7 +4,7 @@ export async function exportBackup(data: unknown) {
   );
   const a = document.createElement("a");
   a.href = url;
-  a.download = "autocare-personal-backup.json";
+  a.download = "htsofttechcare-personal-backup.json";
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
@@ -29,7 +29,7 @@ export function chooseBackup(): Promise<any> {
       } catch {
         reject(
           Error(
-            "Không đọc được bản sao đã chọn. Vui lòng chọn bản sao được lưu từ AutoCare.",
+            "Không đọc được bản sao đã chọn. Vui lòng chọn bản sao được lưu từ Htsofttechcare.",
           ),
         );
       }
