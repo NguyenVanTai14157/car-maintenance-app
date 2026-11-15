@@ -13,7 +13,7 @@ export function RecoveryForm({ reset = false }: { reset?: boolean }) {
       <section className="auth-card">
         <Link href="/login" className="brand">
           <Image className="brand-mark" src="/company-logo.png" alt="" width={29} height={29} />
-          Htsofttechcare<span className="brand-admin">ADMIN</span>
+          Htsofttechcare
         </Link>
         <h1>{reset ? "Đặt lại mật khẩu" : "Quên mật khẩu?"}</h1>
         <p>

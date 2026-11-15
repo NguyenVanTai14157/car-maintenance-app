@@ -5,7 +5,9 @@ import { DatabaseModule } from "./database/database.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { RealtimeModule } from "./modules/realtime/realtime.module";
 import { PersonalModule } from "./modules/personal/personal.module";
+import { BannersModule } from "./modules/banners/banners.module";
 import { HealthController } from "./health.controller";
+import { SystemLogsController } from "./modules/admin/system-logs.controller";
 @Module({
   imports: [
     DatabaseModule,
@@ -14,7 +16,8 @@ import { HealthController } from "./health.controller";
     PersonalModule,
     CatalogModule,
     AdminModule,
+    BannersModule,
   ],
-  controllers: [HealthController],
+  controllers: [HealthController, SystemLogsController],
 })
 export class AppModule {}

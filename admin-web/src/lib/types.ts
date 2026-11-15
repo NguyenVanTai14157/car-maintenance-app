@@ -12,23 +12,23 @@ export interface AdminUser {
   plans?: number;
   records?: number;
 }
+export interface HomeBanner {
+  id: number;
+  title: string;
+  action_text: string;
+  target_path: "/plans" | "/record-edit" | "/vehicles";
+  image_path: string;
+  image_paths?: string[];
+  position: number;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
 export interface Page<T> {
   items: T[];
   total: number;
   page: number;
   page_size: number;
-}
-export type CatalogKind = "brands" | "models" | "types";
-export interface CatalogItem {
-  id: number;
-  name: string;
-  active: boolean;
-  brand_id?: number;
-  type_id?: number | null;
-  brand_name?: string;
-  type_name?: string;
-  brand_active?: boolean;
-  type_active?: boolean;
 }
 export interface Vehicle {
   id: number;
@@ -41,12 +41,6 @@ export interface Vehicle {
   year: number | null;
   odometer: number;
   archived: boolean;
-  brand_id: number | null;
-  model_id: number | null;
-  type_id: number | null;
-  type_name: string | null;
-  catalog_brand_name?: string;
-  catalog_model_name?: string;
   notes?: string;
   image?: string;
   images?: string[];
@@ -67,10 +61,31 @@ export interface Dashboard {
   active_admins: number;
   vehicles: number;
   archived_vehicles: number;
-  active_brands: number;
-  active_models: number;
-  active_types: number;
+  maintenance_plans: {
+    planned: number;
+    soon: number;
+    due: number;
+    overdue: number;
+    completed: number;
+    cancelled: number;
+  };
   top_brands: { name: string; vehicles: number }[];
+}
+export interface AdminPlan {
+  id: number;
+  vehicle_id: number;
+  category_name: string;
+  due_date: string | null;
+  due_km: number | null;
+  current_km: number;
+  brand: string;
+  model: string;
+  plate: string | null;
+  year: number | null;
+  cancelled: boolean;
+  completed_record_id: number | null;
+  status: "planned" | "soon" | "due" | "overdue" | "completed" | "cancelled";
+  reasons: string[];
 }
 export interface AuditLog {
   id: string;

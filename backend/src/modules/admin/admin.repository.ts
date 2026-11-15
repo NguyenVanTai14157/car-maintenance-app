@@ -2,6 +2,7 @@ import { Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { DatabaseService } from "../../database/database.service";
 import { pageInput, queryBool, searchPattern } from "./admin.rules";
 import { integer, fail } from "../../common/validation/input";
+import { planStatus, today } from "../personal/personal.rules";
 import type { PageQuery } from "./dto/input.dto";
 export const userColumns =
   "u.id,u.name,u.email,u.phone,u.role,u.avatar,u.active,u.created_at";
@@ -200,14 +201,54 @@ export class AdminRepository {
       page_size: p.page_size,
     };
   }
+  async vehiclePlans(id: number, q: PageQuery) {
+    await this.vehicle(id);
+    const p = pageInput(q);
+    const count = await this.db.query(
+      "SELECT count(*)::int total FROM plans WHERE vehicle_id=$1",
+      [id],
+    );
+    const rows = await this.db.query(
+      "SELECT p.id,p.vehicle_id,p.category_id,p.due_date,p.due_km,p.remind_days,p.remind_km,p.interval_months,p.interval_km,p.notes,p.cancelled,p.source_record_id,k.name category_name,v.brand,v.model,v.plate,v.year,v.odometer current_km,r.id completed_record_id FROM plans p JOIN vehicles v ON v.id=p.vehicle_id JOIN categories k ON k.id=p.category_id LEFT JOIN records r ON r.plan_id=p.id WHERE p.vehicle_id=$1 ORDER BY p.cancelled,p.due_date NULLS LAST,p.due_km NULLS LAST,p.id DESC LIMIT $2 OFFSET $3",
+      [id, p.page_size, p.offset],
+    );
+    return {
+      items: rows.rows.map((plan: any) => ({
+        ...plan,
+        ...planStatus(plan, today()),
+      })),
+      total: count.rows[0].total,
+      page: p.page,
+      page_size: p.page_size,
+    };
+  }
   async dashboard() {
-    const counts = await this.db.query(
-      "SELECT (SELECT count(*)::int FROM users WHERE role='user') users,(SELECT count(*)::int FROM users WHERE role='user' AND active) active_users,(SELECT count(*)::int FROM users WHERE role='admin' AND active) active_admins,(SELECT count(*)::int FROM vehicles) vehicles,(SELECT count(*)::int FROM vehicles WHERE archived) archived_vehicles,(SELECT count(*)::int FROM vehicle_brands WHERE active) active_brands,(SELECT count(*)::int FROM vehicle_models m JOIN vehicle_brands b ON b.id=m.brand_id LEFT JOIN vehicle_types t ON t.id=m.type_id WHERE m.active AND b.active AND (m.type_id IS NULL OR t.active)) active_models,(SELECT count(*)::int FROM vehicle_types WHERE active) active_types",
-    );
-    const brands = await this.db.query(
-      "SELECT COALESCE(b.name,v.brand) name,count(*)::int vehicles FROM vehicles v LEFT JOIN vehicle_brands b ON b.id=v.brand_id GROUP BY COALESCE(b.name,v.brand) ORDER BY vehicles DESC,name LIMIT 10",
-    );
-    return { ...counts.rows[0], top_brands: brands.rows };
+    const [counts, brands, plans] = await Promise.all([
+      this.db.query(
+        "SELECT (SELECT count(*)::int FROM users WHERE role='user') users,(SELECT count(*)::int FROM users WHERE role='user' AND active) active_users,(SELECT count(*)::int FROM users WHERE role='admin' AND active) active_admins,(SELECT count(*)::int FROM vehicles) vehicles,(SELECT count(*)::int FROM vehicles WHERE archived) archived_vehicles",
+      ),
+      this.db.query(
+        "SELECT min(trim(brand)) name,count(*)::int vehicles FROM vehicles WHERE trim(brand)<>'' GROUP BY lower(trim(brand)) ORDER BY vehicles DESC,name LIMIT 10",
+      ),
+      this.db.query(
+        "SELECT p.due_date,p.due_km,p.remind_days,p.remind_km,p.cancelled,r.id completed_record_id,v.odometer current_km FROM plans p JOIN vehicles v ON v.id=p.vehicle_id LEFT JOIN records r ON r.plan_id=p.id",
+      ),
+    ]);
+    const maintenance_plans = {
+      planned: 0,
+      soon: 0,
+      due: 0,
+      overdue: 0,
+      completed: 0,
+      cancelled: 0,
+    };
+    const currentDay = today();
+    for (const plan of plans.rows) {
+      const status = planStatus(plan, currentDay)
+        .status as keyof typeof maintenance_plans;
+      maintenance_plans[status]++;
+    }
+    return { ...counts.rows[0], top_brands: brands.rows, maintenance_plans };
   }
   async logs(q: PageQuery) {
     const p = pageInput(q),

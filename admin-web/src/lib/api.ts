@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import type { CatalogItem, CatalogKind, Page } from "./types";
+import type { Page } from "./types";
 export async function api<T>(
   path: string,
   method = "GET",
@@ -50,6 +50,25 @@ export function useData<T>(path: string | null) {
       });
     return () => controller.abort();
   }, [path, version]);
+  useEffect(() => {
+    const resource = path?.split(/[/?]/)[1];
+    if (!resource || !["vehicles", "dashboard", "system-logs"].includes(resource)) return;
+    let pending: ReturnType<typeof setTimeout> | undefined;
+    const onChange = (event: Event) => {
+      const resources = (event as CustomEvent<string[]>).detail;
+      if (!resources.includes("*") && !resources.includes(resource)) return;
+      if (pending) return;
+      pending = setTimeout(() => {
+        pending = undefined;
+        refresh((value) => value + 1);
+      }, 150);
+    };
+    window.addEventListener("autocare:admin-changed", onChange);
+    return () => {
+      window.removeEventListener("autocare:admin-changed", onChange);
+      clearTimeout(pending);
+    };
+  }, [path]);
   const reload = useCallback(() => {
     setState({ key: null });
     refresh((v) => v + 1);
@@ -60,18 +79,6 @@ export function useData<T>(path: string | null) {
     loading: !!path && state.key !== path,
     reload,
   };
-}
-export async function allCatalog(kind: CatalogKind) {
-  const items: CatalogItem[] = [];
-  let page = 1;
-  while (true) {
-    const result = await api<Page<CatalogItem>>(
-      `admin/catalog/${kind}?page=${page}&page_size=100`,
-    );
-    items.push(...result.items);
-    if (!result.items.length || items.length >= result.total) return items;
-    page++;
-  }
 }
 export function query(
   values: Record<string, string | number | boolean | null | undefined>,

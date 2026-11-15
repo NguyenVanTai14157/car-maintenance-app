@@ -12,13 +12,10 @@ import {
 type Context = { params: Promise<{ path: string[] }> };
 function allowed(method: string, path: string) {
   if (method === "GET")
-    return /^(dashboard|users(?:\/\d+)?|vehicles(?:\/\d+(?:\/records)?)?|audit-logs|catalog\/(brands|models|types))$/.test(
-      path,
-    );
-  if (method === "POST")
-    return /^(users|catalog\/(brands|models|types))$/.test(path);
+    return /^(dashboard|users(?:\/\d+)?|vehicles(?:\/\d+(?:\/(?:records|plans))?)?|audit-logs|system-logs|banners)$/.test(path);
+  if (method === "POST") return /^(users|banners)$/.test(path);
   if (method === "PATCH" || method === "DELETE")
-    return /^(users\/\d+|catalog\/(brands|models|types)\/\d+)$/.test(path);
+    return /^(users\/\d+|banners\/\d+)$/.test(path);
   return false;
 }
 async function handle(request: NextRequest, { params }: Context) {
@@ -32,7 +29,7 @@ async function handle(request: NextRequest, { params }: Context) {
   let body: unknown;
   if (["POST", "PATCH"].includes(request.method))
     try {
-      body = await bodyJson(request);
+      body = await bodyJson(request, path === "banners" || path.startsWith("banners/") ? 23000000 : 16000);
     } catch {
       return json({ message: "Dữ liệu nhập không hợp lệ." }, 400);
     }

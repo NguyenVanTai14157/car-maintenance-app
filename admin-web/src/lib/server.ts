@@ -23,6 +23,7 @@ export async function nest(
   token?: string,
   method = "GET",
   body?: unknown,
+  signal?: AbortSignal,
 ) {
   return fetch(
     (process.env.ADMIN_API_URL || "http://127.0.0.1:3000").replace(/\/$/, "") +
@@ -35,7 +36,7 @@ export async function nest(
       },
       body: body === undefined ? undefined : JSON.stringify(body),
       cache: "no-store",
-      signal: AbortSignal.timeout(20000),
+      signal: signal ?? AbortSignal.timeout(20000),
     },
   );
 }
@@ -71,10 +72,10 @@ export function disconnected() {
     502,
   );
 }
-export async function bodyJson(request: NextRequest) {
+export async function bodyJson(request: NextRequest, maxLength = 16000) {
   if (!request.headers.get("content-type")?.includes("application/json"))
     throw Error("INVALID_BODY");
   const raw = await request.text();
-  if (raw.length > 16000) throw Error("INVALID_BODY");
+  if (raw.length > maxLength) throw Error("INVALID_BODY");
   return JSON.parse(raw);
 }

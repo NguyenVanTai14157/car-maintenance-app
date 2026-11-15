@@ -21,7 +21,21 @@ import {
 } from "@ant-design/icons";
 import { EmptyData, LoadError, PageHeading } from "@/components/common";
 import { day, money, number, query, useData } from "@/lib/api";
-import type { AdminUser, MaintenanceRecord, Page, Vehicle } from "@/lib/types";
+import type {
+  AdminPlan,
+  AdminUser,
+  MaintenanceRecord,
+  Page,
+  Vehicle,
+} from "@/lib/types";
+const planStatusLabels = {
+  planned: { label: "Đang chờ đến hạn", color: "blue" },
+  soon: { label: "Sắp đến hạn", color: "gold" },
+  due: { label: "Đến hạn", color: "orange" },
+  overdue: { label: "Quá hạn", color: "red" },
+  completed: { label: "Hoàn thành", color: "green" },
+  cancelled: { label: "Đã hủy", color: "default" },
+};
 function Vehicles() {
   const params = useSearchParams();
   const [search, S] = useState(""),
@@ -50,6 +64,9 @@ function Vehicles() {
             "/records?" +
             query({ page: historyPage, page_size: 5 })
         : null,
+    ),
+    plans = useData<Page<AdminPlan>>(
+      detail ? "admin/vehicles/" + detail + "/plans?page_size=100" : null,
     );
   const selectedOwner = useData<AdminUser>(
     owner ? "admin/users/" + owner : null,
@@ -156,24 +173,31 @@ function Vehicles() {
           }}
           columns={[
             {
-              title: "Phương tiện",
+              title: "Hãng xe",
               render: (_, x) => (
                 <div className="name-cell">
                   <span className="stat-icon">
                     <CarOutlined />
                   </span>
                   <div>
-                    <strong>
-                      {x.catalog_brand_name || x.brand}{" "}
-                      {x.catalog_model_name || x.model}
-                    </strong>
-                    <small>
-                      {x.type_name || "Chưa phân loại"} ·{" "}
-                      {x.year || "Chưa có năm"}
-                    </small>
+                    <strong>{x.brand}</strong>
                   </div>
                 </div>
               ),
+            },
+            {
+              title: "Dòng xe",
+              render: (_, x) => (
+                <strong className="vehicle-model-name">
+                  {x.model}
+                </strong>
+              ),
+            },
+            {
+              title: "Năm sản xuất",
+              dataIndex: "year",
+              width: 130,
+              render: (value) => value || null,
             },
             {
               title: "Biển số",
@@ -255,8 +279,7 @@ function Vehicles() {
                 />
                 <div>
                   <h2>
-                    {v.data.catalog_brand_name || v.data.brand}{" "}
-                    {v.data.catalog_model_name || v.data.model}
+                    {v.data.brand} {v.data.model}
                   </h2>
                   <p>{v.data.plate || "Chưa cung cấp biển số"}</p>
                 </div>
@@ -276,10 +299,6 @@ function Vehicles() {
                 {v.data.owner_name}
                 <br />
                 <span className="muted">{v.data.owner_email}</span>
-              </div>
-              <div className="detail-label">Loại xe</div>
-              <div className="detail-value">
-                {v.data.type_name || "Chưa phân loại"}
               </div>
               <div className="detail-label">Ghi chú</div>
               <div className="detail-value">
@@ -301,6 +320,40 @@ function Vehicles() {
                   />
                 ))}
               </Image.PreviewGroup>
+              <div className="detail-divider" />
+              <h3 className="detail-title">Lịch bảo dưỡng</h3>
+              <LoadError error={plans.error} reload={plans.reload} />
+              {plans.loading ? (
+                <Spin />
+              ) : plans.data?.items.length ? (
+                plans.data.items.map((plan) => (
+                  <div key={plan.id} className="record-entry">
+                    <div className="record-entry-header">
+                      <strong>{plan.category_name}</strong>
+                      <Tag color={planStatusLabels[plan.status].color}>
+                        {planStatusLabels[plan.status].label}
+                      </Tag>
+                    </div>
+                    {plan.due_date && (
+                      <p className="muted">Ngày dự kiến: {day(plan.due_date)}</p>
+                    )}
+                    {plan.due_km != null && (
+                      <p className="muted">
+                        Km đến hạn: {number(plan.due_km)} km (hiện tại: {number(plan.current_km)} km)
+                      </p>
+                    )}
+                    {plan.reasons.length > 0 && (
+                      <p className="muted">
+                        Trạng thái theo {plan.reasons
+                          .map((reason) => reason === "date" ? "ngày" : "số km")
+                          .join(" và ")}
+                      </p>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <EmptyData text="Xe này chưa có lịch bảo dưỡng" />
+              )}
               <div className="detail-divider" />
               <h3 className="detail-title">Lịch sử bảo dưỡng</h3>
               <LoadError error={history.error} reload={history.reload} />

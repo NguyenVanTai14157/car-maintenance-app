@@ -7,6 +7,7 @@ import {
 import { Namespace, Socket } from "socket.io";
 import { Client } from "pg";
 import { RealtimeAuthService } from "./realtime-auth.service";
+import { adminChanges } from "../../common/admin-changes";
 interface Change {
   users: (number | null)[];
   roles: string[];
@@ -66,6 +67,11 @@ export class RealtimeGateway implements OnGatewayInit, OnApplicationShutdown {
     client.on("notification", (msg) => {
       try {
         const change = JSON.parse(msg.payload || "") as Change;
+        const adminResources = change.resources.filter((resource) =>
+          ["vehicles", "dashboard", "system-logs"].includes(resource),
+        );
+        if (adminResources.length) adminChanges.next(adminResources);
+        if (!change.users.length && !change.roles.length) return;
         this.queue = this.queue
           .then(() => this.publish(change))
           .catch(() => this.logger.error("Realtime dispatch failed"));
@@ -81,6 +87,7 @@ export class RealtimeGateway implements OnGatewayInit, OnApplicationShutdown {
         return;
       }
       // LISTEN has no replay; resync all connected clients after initial/reconnection.
+      adminChanges.next(["*"]);
       await this.publish({
         users: [],
         roles: ["user", "admin"],

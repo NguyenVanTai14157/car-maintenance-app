@@ -80,6 +80,12 @@ export class AdminController {
   ) {
     return this.repo.history(integer(id, "ID", 1), q);
   }
+  @Get("vehicles/:id/plans") plans(
+    @Param("id") id: string,
+    @Query() q: PageQuery,
+  ) {
+    return this.repo.vehiclePlans(integer(id, "ID", 1), q);
+  }
   @Get("audit-logs") logs(@Query() q: PageQuery) {
     return this.repo.logs(q);
   }

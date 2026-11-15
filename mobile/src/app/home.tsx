@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
-  Image,
+  Animated,
+  type ImageSourcePropType,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -23,6 +24,7 @@ import {
   Screen,
 } from "../components/ui";
 import { useData } from "../hooks/data";
+import { API_URL } from "../services/api";
 export default function Home() {
   const { width, fontScale } = useWindowDimensions();
   const tileWidth =
@@ -177,22 +179,59 @@ const banners = [
 ] as const;
 
 function HomeBanners() {
-  const [width, setWidth] = useState(0);
-  const cardWidth = Math.round(width * 0.9);
+  const [width, setWidth] = useState(0),
+    [activeIndex, setActiveIndex] = useState(0);
+  const carousel = useRef<ScrollView>(null);
+  const remote = useData("/banners");
+  const slides: {
+    id: string;
+    title: string;
+    action: string;
+    path: string;
+    background: string;
+    images: ImageSourcePropType[];
+  }[] = Array.isArray(remote.data)
+    ? remote.data.map((banner: any, index: number) => ({
+        id: String(banner.id),
+        title: banner.title,
+        action: banner.action_text,
+        path: banner.target_path,
+        background: index % 2 === 0 ? "#174C40" : "#173B55",
+        images: ((banner.image_paths ?? [banner.image_path]) as string[]).map(
+          (path) => ({ uri: API_URL + path }),
+        ),
+      }))
+    : banners.map((banner) => ({
+        ...banner,
+        id: banner.path,
+        images: "image" in banner ? [banner.image] : [],
+      }));
+  const cardWidth = Math.round(width);
+
+  useEffect(() => {
+    setActiveIndex(0);
+    carousel.current?.scrollTo({ x: 0, animated: false });
+  }, [slides.length, cardWidth]);
 
   return (
     <View onLayout={({ nativeEvent }) => setWidth(nativeEvent.layout.width)}>
       {cardWidth > 0 && (
         <ScrollView
+          ref={carousel}
           horizontal
+          scrollEnabled={slides.length > 1}
           showsHorizontalScrollIndicator={false}
           decelerationRate="fast"
           snapToInterval={cardWidth + 10}
           contentContainerStyle={bannerStyles.row}
+          onMomentumScrollEnd={({ nativeEvent }) => {
+            const index = Math.round(nativeEvent.contentOffset.x / (cardWidth + 10));
+            setActiveIndex(Math.max(0, Math.min(index, slides.length - 1)));
+          }}
         >
-          {banners.map((banner) => (
+          {slides.map((banner, index) => (
             <Pressable
-              key={banner.path}
+              key={banner.id}
               accessibilityRole="button"
               accessibilityLabel={`${banner.title} ${banner.action}`}
               onPress={() => go(banner.path)}
@@ -205,19 +244,87 @@ function HomeBanners() {
                 <Text style={bannerStyles.title}>{banner.title}</Text>
                 <Text style={bannerStyles.action}>{banner.action}</Text>
               </View>
-              {"image" in banner && width >= 320 && (
-                <View style={bannerStyles.imageFrame}>
-                  <Image
-                    source={banner.image}
-                    style={bannerStyles.image}
-                    resizeMode="cover"
-                    accessible={false}
-                  />
-                </View>
+              {banner.images.length > 0 && (
+                <BannerPhotos
+                  sources={banner.images}
+                  active={index === activeIndex}
+                />
               )}
             </Pressable>
           ))}
         </ScrollView>
+      )}
+      {slides.length > 1 && (
+        <View style={bannerStyles.dots} accessibilityLabel={`Banner ${activeIndex + 1} trên ${slides.length}`}>
+          {slides.map((banner, index) => (
+            <View key={banner.id} style={[bannerStyles.dot, index === activeIndex && bannerStyles.activeDot]} />
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
+function BannerPhotos({
+  sources,
+  active,
+}: {
+  sources: ImageSourcePropType[];
+  active: boolean;
+}) {
+  const [index, setIndex] = useState(0);
+  const [width, setWidth] = useState(0);
+  const progress = useRef(new Animated.Value(0)).current;
+  const count = sources.length;
+
+  useLayoutEffect(() => {
+    progress.setValue(0);
+  }, [index, progress]);
+
+  useEffect(() => {
+    if (!active || count < 2 || !width) return;
+    const animation = Animated.timing(progress, {
+      toValue: 1,
+      duration: 350,
+      useNativeDriver: true,
+    });
+    const timer = setInterval(() => {
+      animation.start(({ finished }) => {
+        if (finished) setIndex((current) => (current + 1) % count);
+      });
+    }, 3000);
+    return () => {
+      clearInterval(timer);
+      animation.stop();
+      progress.setValue(0);
+    };
+  }, [active, count, progress, width]);
+
+  return (
+    <View
+      style={bannerStyles.imageFrame}
+      onLayout={({ nativeEvent }) => setWidth(nativeEvent.layout.width)}
+    >
+      <Animated.Image
+        source={sources[index % count]}
+        style={[bannerStyles.image, {
+          transform: [{ translateX: Animated.multiply(progress, -width) }],
+        }]}
+        resizeMode="cover"
+        accessible={false}
+      />
+      {count > 1 && width > 0 && (
+        <Animated.Image
+          source={sources[(index + 1) % count]}
+          style={[bannerStyles.image, {
+            transform: [{ translateX: progress.interpolate({
+              inputRange: [0, 1],
+              outputRange: [width, 0],
+            }) }],
+          }]}
+          resizeMode="cover"
+          accessible={false}
+        />
       )}
     </View>
   );
@@ -234,6 +341,9 @@ const bannerStyles = StyleSheet.create({
   copy: { flex: 1, paddingHorizontal: 14, paddingVertical: 10, justifyContent: "center", gap: 5 },
   title: { color: "white", fontSize: 19, fontWeight: "800" },
   action: { color: "#D7E9AA", fontSize: 13, fontWeight: "700" },
-  imageFrame: { width: "35%" },
+  imageFrame: { width: "50%", overflow: "hidden" },
   image: { position: "absolute", width: "100%", height: "100%" },
+  dots: { flexDirection: "row", justifyContent: "center", gap: 5, paddingTop: 8 },
+  dot: { width: 6, height: 6, borderRadius: 4, backgroundColor: "#C6D7CF" },
+  activeDot: { width: 16, backgroundColor: "#21604D" },
 });

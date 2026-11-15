@@ -75,6 +75,7 @@ p {
   flex-direction: column;
   z-index: 20;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 .brand {
   display: flex;
@@ -95,21 +96,23 @@ p {
   object-fit: contain;
   flex-shrink: 0;
 }
-.brand-admin {
-  align-self: center;
-  margin-left: 3px;
-  padding: 4px 6px;
-  font-size: 8px;
-  font-weight: 650;
-  letter-spacing: 1px;
-  color: #c0d1b8;
-  border: 1px solid #486151;
-  border-radius: 4px;
-}
 .sidebar .brand,
 .drawer-nav .brand {
-  font-size: 19px;
-  letter-spacing: -0.5px;
+  width: 100%;
+  min-width: 0;
+  gap: 5px;
+  padding-left: 0;
+  padding-right: 0;
+  font-size: 16px;
+  letter-spacing: -0.6px;
+}
+.sidebar .brand-name,
+.drawer-nav .brand-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  font-size: 15px;
+  letter-spacing: -0.65px;
+  white-space: nowrap;
 }
 .sidebar .brand-mark,
 .drawer-nav .brand-mark,
@@ -118,20 +121,12 @@ p {
   background: #e1eee7;
   border-radius: 6px;
 }
-.sidebar .brand-admin,
-.drawer-nav .brand-admin {
-  margin-left: 0;
-  color: #e2ede5;
-}
 .nav-section-label {
   font-size: 11px;
   letter-spacing: 1.6px;
   color: #b4cbbc;
   margin: 8px 14px 15px;
   font-weight: 600;
-}
-.catalog-label {
-  margin-top: 29px;
 }
 .nav-link {
   display: flex;
@@ -385,6 +380,12 @@ p {
   color: var(--muted);
   margin-top: 4px;
 }
+.vehicle-model-name {
+  display: block;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-weight: 600;
+}
 .muted {
   color: var(--muted);
   font-size: 13px;
@@ -554,11 +555,6 @@ p {
   gap: 8px;
   flex-wrap: wrap;
   margin-top: 12px;
-}
-.catalog-context {
-  font-size: 10px;
-  color: #96a08e;
-  margin-top: 4px;
 }
 .stats-grid {
   display: grid;
@@ -1073,10 +1069,6 @@ p {
   color: var(--ink);
   padding: 0;
   font-size: 23px;
-}
-.auth-card .brand-admin {
-  color: #78916a;
-  border-color: #dce6d2;
 }
 .auth-back {
   display: block;

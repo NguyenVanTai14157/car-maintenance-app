@@ -22,7 +22,7 @@ export function LoginForm() {
       <section className="login-story">
         <Link href="/login" className="brand login-brand">
           <Image className="brand-mark" src="/company-logo.png" alt="" width={29} height={29} />
-          Htsofttechcare<span className="brand-admin">ADMIN</span>
+          Htsofttechcare
         </Link>
         <div className="login-story-main">
           <span className="login-eyebrow">
@@ -141,7 +141,7 @@ export function LoginForm() {
           </div>
         </div>
         <div className="login-bottom">
-          Htsofttechcare ADMIN <span>Chăm xe chu đáo · An tâm mỗi ngày</span>
+          Htsofttechcare <span>Chăm xe chu đáo · An tâm mỗi ngày</span>
         </div>
       </section>
     </div>

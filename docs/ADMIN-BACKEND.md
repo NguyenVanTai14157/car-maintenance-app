@@ -2,7 +2,7 @@
 
 ## Trạng thái và phạm vi
 
-Backend admin đã được ghép vào `backend/src/modules/admin/` và `backend/src/modules/catalog/`. Giao diện Next.js ở thư mục gốc `admin-web/`, ngang cấp với `backend/` và `mobile/`. Gói cập nhật tạm đã chuyển vào bản sao local, không còn thư mục backend-updates ở gốc dự án.
+Backend admin được đặt tại `backend/src/modules/admin/`. Giao diện Next.js ở thư mục gốc `admin-web/`, ngang cấp với `backend/` và `mobile/`. Gói cập nhật tạm đã chuyển vào bản sao local, không còn thư mục backend-updates ở gốc dự án.
 
 App cá nhân vẫn có role `user`. Role `admin` đăng nhập web qua endpoint riêng. Web Next.js trong admin-web/ đã triển khai, gọi cùng Nest API qua lớp API cùng nguồn. Phiên admin được giữ bằng cookie HttpOnly; token không trả về JavaScript của trình duyệt.
 
@@ -15,7 +15,8 @@ App cá nhân vẫn có role `user`. Role `admin` đăng nhập web qua endpoint
 - Không tự khóa, tự hạ quyền hoặc tự xóa tài khoản đang quản trị. Giữ ít nhất một admin hoạt động. Các mutation admin kiểm tra lại quyền trong transaction và được tuần tự hóa để chặn hạ quyền chéo đồng thời.
 - Chỉ xóa tài khoản chưa có xe/kế hoạch/lịch sử. Có dữ liệu thì khóa; không xóa dây chuyền lịch sử/chi phí cá nhân.
 - Admin xem xe, chủ sở hữu và lịch sử để hỗ trợ. Không có API admin sửa/xóa xe hoặc lịch sử của người dùng.
-- Hãng xe: Honda/Toyota; dòng xe: City/Vios thuộc hãng; loại xe: Sedan/SUV/Bán tải. Danh mục đã dùng phải ngừng sử dụng thay vì xóa. Dòng đã dùng không được đổi hãng/loại xe.
+- Admin quản lý banner trang chủ: tải ảnh JPEG/PNG tối đa 2 MB, cập nhật nội dung, thứ tự, màn hình đích và trạng thái hiển thị. Thay đổi banner được ghi vào nhật ký quản trị.
+- Danh mục hãng, dòng và loại xe do quản trị viên quản lý; không cần có dữ liệu mẫu ban đầu. Migration dọn các mục ví dụ chưa được xe người dùng sử dụng và giữ lại các mục đang được tham chiếu. Danh mục đã dùng phải ngừng sử dụng thay vì xóa. Dòng đã dùng không được đổi hãng/loại xe.
 - Mỗi thay đổi quản trị ghi nhật ký trong cùng transaction; không ghi mật khẩu, token hoặc thông tin kết nối DB vào nhật ký. Nhật ký chỉ đọc qua API.
 
 ## Đăng nhập và phiên
@@ -48,43 +49,28 @@ Query danh sách: `page` mặc định 1, `page_size` mặc định 20, giới h
 
 | Method | Endpoint | Chức năng |
 | --- | --- | --- |
-| GET | /admin/dashboard | Số user/admin hoạt động, xe, danh mục, hãng phổ biến |
+| GET | /admin/dashboard | Số tài khoản, xe và trạng thái lịch bảo dưỡng; hãng phổ biến từ xe đã đăng ký |
 | GET | /admin/vehicles | Danh sách xe kèm tên/email chủ sở hữu |
 | GET | /admin/vehicles/:id | Chi tiết xe, ảnh/ghi chú nếu có |
+| GET | /admin/vehicles/:id/plans | Lịch bảo dưỡng và trạng thái tính theo ngày/km, chỉ đọc |
 | GET | /admin/vehicles/:id/records | Lịch sử thực tế của xe, phân trang, chỉ đọc |
 | GET | /admin/audit-logs | Nhật ký quản trị, phân trang |
+| GET | /admin/banners | Danh sách banner trang chủ |
+| POST | /admin/banners | Tạo banner và tải ảnh lên |
+| PATCH | /admin/banners/:id | Cập nhật nội dung, ảnh, thứ tự hoặc trạng thái |
+| DELETE | /admin/banners/:id | Xóa banner và ảnh đã tải |
+
+App đọc banner đang bật từ `GET /banners`; PostgreSQL phát tín hiệu realtime để các ứng dụng đang mở tải lại danh sách. Ảnh được lưu trên ổ đĩa backend và phục vụ tại `/uploads/banners/:filename`. Khi triển khai production, cấu hình `BANNER_UPLOAD_DIR` trỏ đến ổ lưu trữ bền vững và đưa thư mục đó vào quy trình sao lưu; database chỉ lưu đường dẫn ảnh, không lưu dữ liệu ảnh.
 
 Xe lọc `owner_id`, `brand_id`, `model_id`, `type_id`, `archived=true|false`, `q` tìm biển/hãng/dòng/tên/email chủ xe. Danh sách xe không tải ảnh base64; chỉ tải ở chi tiết. Nhật ký lọc `actor_id`, `action`, `entity`. Admin không truy cập chức năng cá nhân `/vehicles`, `/plans`, `/records`, `/backup` như user thông thường.
 
-## API danh mục
-
-`kind` chỉ nhận `brands`, `models`, `types`.
-
-| Method | Endpoint | Chức năng |
-| --- | --- | --- |
-| GET | /admin/catalog/:kind | Xem cả hoạt động/ngừng sử dụng |
-| POST | /admin/catalog/:kind | Thêm |
-| PATCH | /admin/catalog/:kind/:id | Sửa tên/trạng thái/tham chiếu được phép |
-| DELETE | /admin/catalog/:kind/:id | Xóa nếu chưa có tham chiếu |
-| GET | /catalog/:kind | User/admin đọc danh mục đang dùng để chọn xe |
-
-Hãng/loại: `{name,active?}`. Dòng xe: `{name,brand_id,type_id?,active?}`. PATCH nhận một phần các trường đó. Tên hãng/loại không trùng không phân biệt hoa/thường; tên dòng không trùng trong cùng hãng. Model thuộc hãng/loại ngừng sử dụng sẽ không hiện ở API chọn xe. Query model có `brand_id`, `type_id`; các danh sách có `q`, `page`, `page_size`, admin có thêm `active`.
-
-Ví dụ tạo xe từ danh mục, dùng API cá nhân hiện có:
-
-```json
-{"brand_id":1,"model_id":1,"odometer":35000,"plate":"51A-123.45"}
-```
-
-Server lấy tên hãng/dòng từ danh mục, kiểm tra quan hệ và trạng thái, suy ra loại xe mặc định của model. Chọn sai hãng/model/type bị chặn. `brand` và `model` dạng text vẫn được chấp nhận để tương thích app hiện tại; không tạo danh mục toàn cục từ text người dùng nhập. Sau khi mobile có bộ chọn danh mục, ưu tiên gửi các ID chuẩn. Xe đã dùng danh mục ngừng hoạt động vẫn sửa thông tin khác được mà không buộc mất liên kết cũ.
-
 ## Dữ liệu cũ và backup
 
-Migration chỉ bổ sung bảng/cột, không xóa dữ liệu cá nhân và phiên cũ. Liên kết xe cũ chỉ khi tên hãng/dòng khớp chính xác sau trim và bỏ phân biệt hoa/thường; trường text gốc giữ nguyên. Xe không khớp vẫn hiện trong danh sách admin và tìm được bằng q; không đoán dòng/loại xe.
+Hãng và dòng xe trong màn quản trị được lấy trực tiếp từ thông tin người dùng nhập trên xe. Các bảng tham chiếu cũ vẫn được giữ để bảo toàn liên kết của xe và file sao lưu từ những phiên bản trước; web admin không còn màn hình quản lý các danh mục này. Migration xóa các mục ví dụ chưa được xe nào tham chiếu, không xóa xe hay dữ liệu cá nhân.
 
-Backup cá nhân giữ các liên kết catalog của xe khi khôi phục trên cùng hệ thống; file cũ không có ID catalog vẫn khôi phục được thành xe text. Kiểm tra tham chiếu diễn ra trước khi thay dữ liệu, có rollback nếu lỗi.
+Backup cá nhân giữ các liên kết tham chiếu cũ khi khôi phục trên cùng hệ thống; file không có ID tham chiếu vẫn khôi phục xe bằng tên hãng/dòng dạng text. Kiểm tra tham chiếu diễn ra trước khi thay dữ liệu, có rollback nếu lỗi.
 
-Migration có version và checksum trong `schema_migrations`, chạy một lần trong transaction/lock. Không sửa migration đã áp dụng; tạo migration mới. Danh mục khởi tạo không tự xuất hiện lại sau khi admin đã đổi tên/xóa ở các lần khởi động sau.
+Migration có version và checksum trong `schema_migrations`, chạy một lần trong transaction/lock. Không sửa migration đã áp dụng; tạo migration mới. Danh mục không còn được quản lý từ web admin và không tự nạp dữ liệu ví dụ khi khởi động.
 
 ## Mã lỗi
 

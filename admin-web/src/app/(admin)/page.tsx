@@ -5,8 +5,9 @@ import {
   ArrowRightOutlined,
   TeamOutlined,
   CarOutlined,
-  TrademarkOutlined,
-  BranchesOutlined,
+  CalendarOutlined,
+  WarningOutlined,
+  HistoryOutlined,
   ReloadOutlined,
 } from "@ant-design/icons";
 import { LoadError, PageHeading, EmptyData } from "@/components/common";
@@ -17,7 +18,13 @@ export default function DashboardPage() {
     d = q.data;
   const active = d?.active_users || 0,
     locked = (d?.users || 0) - active,
-    portion = d?.users ? active / d.users : 0;
+    portion = d?.users ? active / d.users : 0,
+    trackedPlans = d?.maintenance_plans
+      ? d.maintenance_plans.planned +
+        d.maintenance_plans.soon +
+        d.maintenance_plans.due +
+        d.maintenance_plans.overdue
+      : 0;
   return (
     <>
       <PageHeading
@@ -39,7 +46,7 @@ export default function DashboardPage() {
           <div className="eyebrow">KẾT NỐI NHỮNG HÀNH TRÌNH</div>
           <h2>Chăm xe chu đáo, bắt đầu từ dữ liệu tốt.</h2>
           <p>
-            Quản lý tài khoản và chuẩn hóa danh mục phương tiện,
+            Quản lý tài khoản và theo dõi thông tin xe người dùng đã đăng ký,
             <br />
             để mỗi hành trình cùng Htsofttechcare thêm an tâm.
           </p>
@@ -65,16 +72,16 @@ export default function DashboardPage() {
             icon: <CarOutlined />,
           },
           {
-            label: "Hãng xe",
-            value: d?.active_brands,
-            caption: "Danh mục đang sử dụng",
-            icon: <TrademarkOutlined />,
+            label: "Lịch đang theo dõi",
+            value: d?.maintenance_plans ? trackedPlans : undefined,
+            caption: "Chưa hoàn thành hoặc hủy",
+            icon: <CalendarOutlined />,
           },
           {
-            label: "Dòng xe",
-            value: d?.active_models,
-            caption: `Thuộc ${number(d?.active_types || 0)} loại xe`,
-            icon: <BranchesOutlined />,
+            label: "Lịch quá hạn",
+            value: d?.maintenance_plans?.overdue,
+            caption: "Đã quá ngày hoặc số km đến hạn",
+            icon: <WarningOutlined />,
           },
         ].map((s) => (
           <div
@@ -212,10 +219,10 @@ export default function DashboardPage() {
               icon: <CarOutlined />,
             },
             {
-              href: "/catalog/brands",
-              title: "Chuẩn hóa danh mục",
-              description: "Hãng, dòng và loại xe",
-              icon: <TrademarkOutlined />,
+              href: "/audit-logs",
+              title: "Nhật ký quản trị",
+              description: "Theo dõi các thay đổi trong hệ thống",
+              icon: <HistoryOutlined />,
             },
           ].map((l) => (
             <Link href={l.href} className="quick-link" key={l.href}>

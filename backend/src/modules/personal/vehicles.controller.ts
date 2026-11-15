@@ -8,7 +8,9 @@ import {
   Patch,
   Post,
   Req,
+  Res,
 } from "@nestjs/common";
+import type { Response } from "express";
 import type { AuthenticatedRequest } from "../../common/types/authenticated-request";
 import { integer } from "../../common/validation/input";
 import { PersonalVehiclesService } from "./catalog.service";
@@ -28,8 +30,14 @@ export class PersonalVehiclesController {
   @Get() list(@Req() r: AuthenticatedRequest) {
     return this.service.list(r.user.id);
   }
-  @Post() create(@Req() r: AuthenticatedRequest, @Body() b: any) {
-    return this.mutate(r, () => this.service.save(r.user.id, null, b));
+  @Post() async create(
+    @Req() r: AuthenticatedRequest,
+    @Body() b: any,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const vehicle = await this.mutate(r, () => this.service.save(r.user.id, null, b));
+    response.locals.logResourceId = vehicle?.id;
+    return vehicle;
   }
   @Patch(":id") update(
     @Req() r: AuthenticatedRequest,

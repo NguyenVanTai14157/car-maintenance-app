@@ -8,9 +8,7 @@ import {
   AppstoreOutlined,
   TeamOutlined,
   CarOutlined,
-  TrademarkOutlined,
-  BranchesOutlined,
-  PartitionOutlined,
+  PictureOutlined,
   HistoryOutlined,
   SettingOutlined,
   LogoutOutlined,
@@ -24,10 +22,9 @@ const links = [
   { href: "/", label: "Tổng quan", icon: <AppstoreOutlined /> },
   { href: "/users", label: "Người dùng", icon: <TeamOutlined /> },
   { href: "/vehicles", label: "Danh sách xe", icon: <CarOutlined /> },
-  { href: "/catalog/brands", label: "Hãng xe", icon: <TrademarkOutlined /> },
-  { href: "/catalog/models", label: "Dòng xe", icon: <BranchesOutlined /> },
-  { href: "/catalog/types", label: "Loại xe", icon: <PartitionOutlined /> },
+  { href: "/banners", label: "Banner trang chủ", icon: <PictureOutlined /> },
   { href: "/audit-logs", label: "Nhật ký quản trị", icon: <HistoryOutlined /> },
+  { href: "/system-logs", label: "Nhật ký hệ thống", icon: <HistoryOutlined /> },
 ];
 export function Shell({
   children,
@@ -41,6 +38,27 @@ export function Shell({
     { message } = App.useApp();
   const [open, setOpen] = useState(false),
     [busy, setBusy] = useState(false);
+  useEffect(() => {
+    let stream: EventSource;
+    let retry: ReturnType<typeof setTimeout> | undefined;
+    function connect() {
+      stream = new EventSource("/api/admin/system-logs/events");
+      stream.onmessage = ({ data }) => {
+        const resources: string[] = JSON.parse(data);
+        if (resources.length)
+          window.dispatchEvent(new CustomEvent("autocare:admin-changed", { detail: resources }));
+      };
+      stream.onerror = () => {
+        if (stream.readyState === EventSource.CLOSED)
+          retry = setTimeout(connect, 5000);
+      };
+    }
+    connect();
+    return () => {
+      clearTimeout(retry);
+      stream.close();
+    };
+  }, []);
   useEffect(() => {
     const expire = () => {
       router.replace("/login?expired=1");
@@ -65,18 +83,13 @@ export function Shell({
     <>
       <Link href="/" className="brand">
         <Image className="brand-mark" src="/company-logo.png" alt="" width={29} height={29} />
-        Htsofttechcare<span className="brand-admin">ADMIN</span>
+        <span className="brand-name">Htsofttechcare</span>
       </Link>
       <div className="nav-section-label">ĐIỀU HÀNH</div>
       <nav>
         {links.map((l, i) => (
           <div key={l.href}>
-            {i === 3 && (
-              <div className="nav-section-label catalog-label">
-                DANH MỤC PHƯƠNG TIỆN
-              </div>
-            )}
-            {i === 6 && <div className="nav-divider" />}
+            {i === 3 && <div className="nav-divider" />}
             <Link
               className={"nav-link " + (path === l.href ? "selected" : "")}
               href={l.href}

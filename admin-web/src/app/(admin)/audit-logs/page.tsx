@@ -12,12 +12,16 @@ const actions: Record<string, string> = {
   "catalog.create": "Thêm danh mục",
   "catalog.update": "Cập nhật danh mục",
   "catalog.delete": "Xóa danh mục",
+  "banner.create": "Thêm banner",
+  "banner.update": "Cập nhật banner",
+  "banner.delete": "Xóa banner",
 };
 const entities: Record<string, string> = {
   users: "Người dùng",
   vehicle_brands: "Hãng xe",
   vehicle_models: "Dòng xe",
   vehicle_types: "Loại xe",
+  home_banners: "Banner trang chủ",
 };
 const fields: Record<string, string> = {
   name: "Họ tên",
@@ -51,7 +55,7 @@ export default function LogsPage() {
     <>
       <PageHeading
         title="Nhật ký quản trị"
-        description="Theo dõi các thay đổi tài khoản và danh mục trên toàn hệ thống."
+        description="Ghi lại các thao tác quản trị như thêm, chỉnh sửa hoặc khóa tài khoản."
         action={
           <Button icon={<ReloadOutlined />} onClick={q.reload}>
             Làm mới
@@ -100,7 +104,7 @@ export default function LogsPage() {
           dataSource={q.data?.items}
           scroll={{ x: 800 }}
           locale={{
-            emptyText: <EmptyData text="Chưa có hoạt động quản trị" />,
+            emptyText: <EmptyData text="Chưa có thao tác quản trị được ghi nhận" />,
           }}
           pagination={{
             current: page,

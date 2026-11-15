@@ -6,9 +6,9 @@ Bản cá nhân và web admin được lưu tại repo [car-maintenance-app](htt
 
 ## Web admin và backend dùng chung
 
-Bố cục gốc gồm `admin-web/` (web quản trị Next.js), `mobile/` (app cá nhân), `backend/` (API NestJS dùng chung). Phần API admin đã ghép vào `backend/src/modules/admin/`, danh mục hãng/dòng/loại xe ở `backend/src/modules/catalog/`; giao diện Next.js + Ant Design đã triển khai, chạy ở cổng 3001. Xem [API admin](docs/ADMIN-BACKEND.md).
+Bố cục gốc gồm `admin-web/` (web quản trị Next.js), `mobile/` (app cá nhân), `backend/` (API NestJS dùng chung). Web quản trị tập trung vào tài khoản và xe người dùng đã đăng ký; hãng và dòng xe lấy từ thông tin người dùng nhập, không quản lý bằng danh mục mẫu. Xem [API admin](docs/ADMIN-BACKEND.md).
 
-Backend có thêm migration 002/003 và script `npm run admin:create` để tạo admin đầu tiên bằng biến môi trường local. Không có tài khoản admin mặc định. Khởi động lại backend để nạp mã/schema mới; không cần đổi database cá nhân đang dùng.
+Backend có các migration quản trị và script `npm run admin:create` để tạo admin đầu tiên bằng biến môi trường local. Không có tài khoản admin mặc định. Migration mới dọn các hãng, dòng và loại xe ví dụ chưa được xe người dùng sử dụng; danh mục đang được xe liên kết vẫn được giữ lại. Khởi động lại backend để áp dụng migration mới; không cần đổi database cá nhân đang dùng.
 
 ## Chạy trên máy hiện tại
 
@@ -46,6 +46,7 @@ Hộp thư này **không gửi email đến Gmail**. Khi có SMTP, đổi `MAIL_
 - Lịch sử tìm kiếm/lọc; chi phí theo xe, thời gian, tháng/năm/hạng mục.
 - Xác nhận đề xuất lịch tiếp theo theo chu kỳ từ ngày/km thực hiện thực tế.
 - Cài đặt thông báo, xuất/khôi phục file JSON (thay thế dữ liệu cá nhân sau xác nhận).
+- Web quản trị tải, sắp xếp, bật/tắt banner; app tự chuyển banner trên Trang chủ và nhận nội dung mới khi quản trị cập nhật.
 
 ## Quy tắc nghiệp vụ
 
@@ -77,6 +78,8 @@ docs/
 ```
 
 Backend dùng SQL parameterized và repository tập trung cho miền cá nhân. Mọi truy vấn/mutation lọc owner_id từ phiên đăng nhập; không tin owner/role từ client. Các thay đổi liên quan trong transaction và khóa theo tài khoản để tránh hoàn thành trùng. Trạng thái đến hạn được tính từ dữ liệu thay vì lưu một chuỗi dễ lỗi thời.
+
+Banner được quản lý tại web admin **Banner trang chủ**. Ảnh được lưu trong `backend/uploads/banners` (có thể đổi bằng `BANNER_UPLOAD_DIR`), còn tiêu đề, nút, thứ tự và trạng thái được lưu trong PostgreSQL. Khi đưa lên máy chủ thật, cần gắn thư mục ảnh này vào ổ lưu trữ bền vững và sao lưu cùng database; nếu máy chủ dùng ổ tạm, ảnh có thể mất sau khi triển khai lại. Backend phục vụ ảnh công khai qua `/uploads/banners/...` để ứng dụng hiển thị.
 
 ## Cài trên máy khác
 
