@@ -1,7 +1,6 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Alert, Button, Form, Input } from "antd";
 import {
@@ -14,13 +13,12 @@ import {
 } from "@ant-design/icons";
 import { api } from "@/lib/api";
 export function LoginForm() {
-  const router = useRouter(),
-    [busy, setBusy] = useState(false),
+  const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   return (
     <div className="login-page">
       <section className="login-story">
-        <Link href="/login" className="brand login-brand">
+        <Link href="/login" prefetch={false} className="brand login-brand">
           <Image className="brand-mark" src="/company-logo.png" alt="" width={29} height={29} />
           Htsofttechcare
         </Link>
@@ -78,8 +76,7 @@ export function LoginForm() {
               setError("");
               try {
                 await api("auth/login", "POST", values);
-                router.replace("/");
-                router.refresh();
+                window.location.replace("/");
               } catch (e) {
                 setError((e as Error).message);
               } finally {
@@ -115,7 +112,7 @@ export function LoginForm() {
               />
             </Form.Item>
             <div className="login-forgot">
-              <Link href="/forgot-password">Quên mật khẩu?</Link>
+              <Link href="/forgot-password" prefetch={false}>Quên mật khẩu?</Link>
             </div>
             {error && (
               <Alert
