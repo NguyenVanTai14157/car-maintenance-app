@@ -55,7 +55,8 @@ export async function requireAdmin() {
   return user;
 }
 export function sameOrigin(request: NextRequest) {
-  return request.headers.get("origin") === request.nextUrl.origin;
+  const publicOrigin = process.env.ADMIN_PUBLIC_ORIGIN?.trim().replace(/\/$/, "");
+  return request.headers.get("origin") === (publicOrigin || request.nextUrl.origin);
 }
 export function json(data: unknown, status = 200) {
   return NextResponse.json(data, {
