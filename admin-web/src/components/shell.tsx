@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { App, Avatar, Button, Dropdown, Drawer } from "antd";
+import { Avatar, Button, Drawer } from "antd";
 import {
   AppstoreOutlined,
   TeamOutlined,
@@ -11,13 +11,10 @@ import {
   PictureOutlined,
   HistoryOutlined,
   SettingOutlined,
-  LogoutOutlined,
   MenuOutlined,
-  DownOutlined,
   SafetyCertificateOutlined,
 } from "@ant-design/icons";
 import type { AdminUser } from "@/lib/types";
-import { api } from "@/lib/api";
 const links = [
   { href: "/", label: "Tổng quan", icon: <AppstoreOutlined /> },
   { href: "/users", label: "Người dùng", icon: <TeamOutlined /> },
@@ -34,29 +31,42 @@ export function Shell({
   user: AdminUser;
 }) {
   const path = usePathname(),
-    router = useRouter(),
-    { message } = App.useApp();
-  const [open, setOpen] = useState(false),
-    [busy, setBusy] = useState(false);
+    router = useRouter();
+  const [open, setOpen] = useState(false);
   useEffect(() => {
-    let stream: EventSource;
+    let stream: EventSource | undefined;
     let retry: ReturnType<typeof setTimeout> | undefined;
+    let stopped = false;
+    let retryDelay = 3000;
     function connect() {
+      if (stopped || document.hidden) return;
+      stream?.close();
       stream = new EventSource("/api/admin/system-logs/events");
+      stream.onopen = () => { retryDelay = 3000; };
       stream.onmessage = ({ data }) => {
         const resources: string[] = JSON.parse(data);
         if (resources.length)
           window.dispatchEvent(new CustomEvent("autocare:admin-changed", { detail: resources }));
       };
       stream.onerror = () => {
-        if (stream.readyState === EventSource.CLOSED)
-          retry = setTimeout(connect, 5000);
+        stream?.close();
+        clearTimeout(retry);
+        retry = setTimeout(connect, retryDelay);
+        retryDelay = Math.min(retryDelay * 2, 30000);
       };
     }
+    const visibility = () => {
+      clearTimeout(retry);
+      if (document.hidden) stream?.close();
+      else connect();
+    };
+    document.addEventListener("visibilitychange", visibility);
     connect();
     return () => {
+      stopped = true;
       clearTimeout(retry);
-      stream.close();
+      document.removeEventListener("visibilitychange", visibility);
+      stream?.close();
     };
   }, []);
   useEffect(() => {
@@ -67,18 +77,6 @@ export function Shell({
     window.addEventListener("autocare:session-expired", expire);
     return () => window.removeEventListener("autocare:session-expired", expire);
   }, [router]);
-  async function logout() {
-    setBusy(true);
-    try {
-      await api("auth/logout", "POST", {});
-      router.replace("/login");
-      router.refresh();
-    } catch (e) {
-      message.error((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }
   const nav = (
     <>
       <Link href="/" className="brand">
@@ -104,16 +102,11 @@ export function Shell({
       </nav>
       <div className="sidebar-bottom">
         <Link
-          className={"nav-link " + (path === "/account" ? "selected" : "")}
           href="/account"
-        >
-          <SettingOutlined />
-          <span>Tài khoản của tôi</span>
-        </Link>
-        <button
-          type="button"
           className="sidebar-user"
-          onClick={() => router.push("/account")}
+          aria-label={`Tài khoản của ${user.name}`}
+          aria-current={path === "/account" ? "page" : undefined}
+          onClick={() => setOpen(false)}
         >
           <Avatar style={{ background: "#d8e7bc", color: "#244b37" }}>
             {user.name.charAt(0).toUpperCase()}
@@ -122,8 +115,8 @@ export function Shell({
             <strong>{user.name}</strong>
             <small>Quản trị viên hệ thống</small>
           </div>
-          <DownOutlined />
-        </button>
+          <SettingOutlined />
+        </Link>
       </div>
     </>
   );
@@ -162,38 +155,18 @@ export function Shell({
             <span className="admin-access">
               <SafetyCertificateOutlined /> Quyền quản trị
             </span>
-            <Dropdown
-              menu={{
-                items: [
-                  {
-                    key: "account",
-                    label: "Tài khoản của tôi",
-                    icon: <SettingOutlined />,
-                  },
-                  { type: "divider" },
-                  {
-                    key: "logout",
-                    label: "Đăng xuất",
-                    icon: <LogoutOutlined />,
-                    danger: true,
-                    disabled: busy,
-                  },
-                ],
-                onClick: ({ key }) =>
-                  key === "logout" ? void logout() : router.push("/account"),
-              }}
+            <Link
+              href="/account"
+              className="account-button"
+              aria-label={`Tài khoản của ${user.name}`}
+              aria-current={path === "/account" ? "page" : undefined}
             >
-              <Button type="text" className="account-button">
-                <Avatar
-                  size={30}
-                  style={{ background: "#edf2e9", color: "#335b45" }}
-                >
-                  {user.name.charAt(0)}
-                </Avatar>
-                <span>{user.name}</span>
-                <DownOutlined style={{ fontSize: 10 }} />
-              </Button>
-            </Dropdown>
+              <Avatar size={30} style={{ background: "#edf2e9", color: "#335b45" }}>
+                {user.name.charAt(0)}
+              </Avatar>
+              <span>{user.name}</span>
+              <SettingOutlined style={{ fontSize: 12 }} />
+            </Link>
           </div>
         </header>
         <main className="main-content">

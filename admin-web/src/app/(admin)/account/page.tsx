@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Alert, App, Button, Form, Input, Popconfirm, Skeleton } from "antd";
+import { Alert, App, Button, Form, Input, Skeleton } from "antd";
 import {
   LogoutOutlined,
   SaveOutlined,
@@ -17,6 +17,7 @@ export default function Account() {
     [busy, B] = useState(false),
     [error, E] = useState(""),
     [passwordError, PE] = useState("");
+  const [loggingOut, setLoggingOut] = useState(false);
   const [passwordForm] = Form.useForm();
   return (
     <>
@@ -201,24 +202,23 @@ export default function Account() {
         )
       )}
       <div style={{ marginTop: 25 }}>
-        <Popconfirm
-          title="Đăng xuất khỏi web quản trị?"
-          okText="Đăng xuất"
-          cancelText="Hủy"
-          onConfirm={async () => {
+        <Button
+          danger
+          icon={<LogoutOutlined />}
+          loading={loggingOut}
+          onClick={async () => {
+            setLoggingOut(true);
             try {
               await api("auth/logout", "POST", {});
-              router.replace("/login");
-              router.refresh();
+              window.location.replace("/login");
             } catch (e) {
               message.error((e as Error).message);
+              setLoggingOut(false);
             }
           }}
         >
-          <Button danger icon={<LogoutOutlined />}>
-            Đăng xuất
-          </Button>
-        </Popconfirm>
+          Đăng xuất
+        </Button>
       </div>
     </>
   );

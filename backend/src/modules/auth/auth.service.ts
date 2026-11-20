@@ -5,7 +5,7 @@ import {
 } from "@nestjs/common";
 import { compare, hash } from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import type { AuthenticatedRequest } from "../../common/types/authenticated-request";
 import {
   contact,
@@ -42,14 +42,78 @@ export class AuthService {
   }
   async session(u: any) {
     const sid = randomUUID();
-    await this.repository.insertSession([sid, u.id]);
+    const persistent = u.role === "user";
+    const refreshToken = persistent ? randomBytes(32).toString("hex") : null;
+    await this.repository.insertSession([
+      sid,
+      u.id,
+      persistent,
+      refreshToken
+        ? createHash("sha256").update(refreshToken).digest("hex")
+        : null,
+    ]);
     return {
       user: publicUser(u),
+      ...(refreshToken ? { refreshToken } : {}),
       accessToken: jwt.sign({ sub: u.id, sid }, process.env.JWT_SECRET!, {
-        expiresIn: "7d",
+        expiresIn: persistent ? "15m" : "7d",
         algorithm: "HS256",
       }),
     };
+  }
+  async refresh(body: { refreshToken?: string }, req: AuthenticatedRequest) {
+    this.limit(req);
+    return this.repository.transaction(async (client) => {
+      let result;
+      if (
+        typeof body.refreshToken === "string" &&
+        /^[a-f0-9]{64}$/.test(body.refreshToken)
+      ) {
+        result = await client.query(
+          "SELECT u.*,s.id AS session_id FROM users u JOIN sessions s ON s.user_id=u.id WHERE s.refresh_token_hash=$1 AND s.expires_at>now() AND u.active=true AND u.role='user' FOR UPDATE OF s",
+          [createHash("sha256").update(body.refreshToken).digest("hex")],
+        );
+      } else {
+        // Upgrade existing mobile sessions once, while their signed token is still valid.
+        try {
+          const payload = jwt.verify(
+            (req.headers.authorization || "").replace(/^Bearer /, ""),
+            process.env.JWT_SECRET!,
+            { algorithms: ["HS256"] },
+          ) as jwt.JwtPayload;
+          result = await client.query(
+            "SELECT u.*,s.id AS session_id FROM users u JOIN sessions s ON s.user_id=u.id WHERE s.id=$1 AND u.id=$2 AND s.refresh_token_hash IS NULL AND s.expires_at>now() AND u.active=true AND u.role='user' FOR UPDATE OF s",
+            [payload.sid, payload.sub],
+          );
+        } catch {
+          throw new UnauthorizedException("Vui lòng đăng nhập lại.");
+        }
+      }
+      const user = result.rows[0];
+      if (!user)
+        throw new UnauthorizedException(
+          "Phiên đã bị thu hồi. Vui lòng đăng nhập lại.",
+        );
+      let refreshToken = body.refreshToken;
+      if (!refreshToken) {
+        refreshToken = randomBytes(32).toString("hex");
+        await client.query(
+          "UPDATE sessions SET refresh_token_hash=$1,expires_at='infinity'::timestamptz WHERE id=$2",
+          [
+            createHash("sha256").update(refreshToken).digest("hex"),
+            user.session_id,
+          ],
+        );
+      }
+      return {
+        accessToken: jwt.sign(
+          { sub: user.id, sid: user.session_id },
+          process.env.JWT_SECRET!,
+          { algorithm: "HS256", expiresIn: "15m" },
+        ),
+        refreshToken,
+      };
+    });
   }
   async register(body: AuthInput, req: AuthenticatedRequest) {
     this.limit(req);

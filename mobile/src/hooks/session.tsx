@@ -1,5 +1,11 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { api, onExpired, restoreToken, saveToken } from "../services/api";
+import {
+  api,
+  onExpired,
+  restoreToken,
+  saveToken,
+  refreshAccessToken,
+} from "../services/api";
 import { startRealtime, subscribeChanges } from "../services/realtime";
 import { clearReminders, syncPersonalReminders } from "../services/reminders";
 const Context = createContext<any>(null);
@@ -47,7 +53,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }, [userId]);
   async function restore() {
     try {
-      if (await restoreToken()) setUser(await api("/auth/me"));
+      if (await restoreToken()) {
+        await refreshAccessToken();
+        setUser(await api("/auth/me"));
+      }
     } catch (e: any) {
       setStartupError(e.message);
     } finally {
@@ -62,13 +71,16 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     });
     restoreToken()
       .then(async (saved) => {
-        if (saved) setUser(await api("/auth/me"));
+        if (saved) {
+          await refreshAccessToken();
+          setUser(await api("/auth/me"));
+        }
       })
       .catch((error) => setStartupError(error.message))
       .finally(() => setLoading(false));
   }, []);
   async function login(result: any) {
-    await saveToken(result.accessToken);
+    await saveToken(result.accessToken, result.refreshToken);
     setStartupError("");
     setUser(result.user);
   }

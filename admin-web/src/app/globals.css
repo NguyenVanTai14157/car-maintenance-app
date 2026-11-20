@@ -35,6 +35,22 @@ button,
 input {
   font: inherit;
 }
+.native-form-select {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid #c8d7ce;
+  border-radius: 10px;
+  background: white;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.native-form-select:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
 button,
 a {
   -webkit-tap-highlight-color: transparent;
@@ -202,6 +218,11 @@ p {
 .sidebar-user > .anticon {
   font-size: 9px;
 }
+.sidebar-user:hover,
+.sidebar-user[aria-current="page"] {
+  background: #244c3e;
+  color: #fff;
+}
 .workspace {
   margin-left: 248px;
 }
@@ -249,7 +270,14 @@ p {
   display: flex;
   gap: 9px;
   align-items: center;
+  min-height: 40px;
+  padding: 4px 10px;
+  border-radius: 10px;
   font-size: 13px !important;
+}
+.account-button:hover,
+.account-button[aria-current="page"] {
+  background: #edf2e9;
 }
 .main-content {
   padding: 37px 40px 0;

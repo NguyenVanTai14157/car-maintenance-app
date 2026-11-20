@@ -8,8 +8,6 @@ import {
   Input,
   InputNumber,
   Modal,
-  Popconfirm,
-  Select,
   Space,
   Switch,
   Table,
@@ -43,7 +41,7 @@ const imageUrl = (path: string) =>
 
 export default function BannersPage() {
   const [form] = Form.useForm<Values>();
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
   const q = useData<HomeBanner[]>("admin/banners");
   const [editing, E] = useState<HomeBanner | null | undefined>();
   const [imageData, I] = useState<string[]>([]);
@@ -54,18 +52,6 @@ export default function BannersPage() {
     E(banner);
     I([]);
     P(banner ? (banner.image_paths ?? [banner.image_path]).map(imageUrl) : []);
-    form.resetFields();
-    form.setFieldsValue(
-      banner
-        ? {
-            title: banner.title,
-            action_text: banner.action_text,
-            target_path: banner.target_path,
-            position: banner.position,
-            active: banner.active,
-          }
-        : { target_path: "/plans", position: (q.data?.length || 0) + 1, active: true },
-    );
   }
 
   const [reading, setReading] = useState(false);
@@ -210,16 +196,28 @@ export default function BannersPage() {
               width: 110,
               render: (_, banner) => <Space>
                 <Button type="text" aria-label="Sửa banner" icon={<EditOutlined />} onClick={() => open(banner)} />
-                <Popconfirm title="Xóa banner này?" description="Ảnh sẽ bị xóa khỏi máy chủ." onConfirm={() => remove(banner)} okText="Xóa" cancelText="Hủy">
-                  <Button danger type="text" aria-label="Xóa banner" icon={<DeleteOutlined />} />
-                </Popconfirm>
+                <Button
+                  danger
+                  type="text"
+                  aria-label="Xóa banner"
+                  icon={<DeleteOutlined />}
+                  onClick={() => modal.confirm({
+                    title: "Xóa banner này?",
+                    content: <><p>{banner.title}</p>Ảnh sẽ bị xóa khỏi máy chủ.</>,
+                    okText: "Xóa",
+                    cancelText: "Hủy",
+                    okButtonProps: { danger: true },
+                    centered: true,
+                    onOk: () => remove(banner),
+                  })}
+                />
               </Space>,
             },
           ]}
         />
         <div className="panel-footer">Ảnh JPG hoặc PNG, tối đa 2 MB. Banner đang hiển thị sẽ được đồng bộ về ứng dụng.</div>
       </section>
-      <Modal
+      {editing !== undefined && <Modal
         title={editing ? "Sửa banner" : "Thêm banner trang chủ"}
         open={editing !== undefined}
         onCancel={() => E(undefined)}
@@ -228,13 +226,25 @@ export default function BannersPage() {
         okButtonProps={{ disabled: reading }}
         cancelButtonProps={{ disabled: reading || busy }}
         closable={!reading && !busy}
-        maskClosable={!reading && !busy}
+        mask={{ closable: !reading && !busy }}
         keyboard={!reading && !busy}
         okText="Lưu banner"
         cancelText="Hủy"
-        forceRender
       >
-        <Form form={form} layout="vertical" preserve={false}>
+        <Form
+          form={form}
+          layout="vertical"
+          preserve={false}
+          initialValues={editing
+            ? {
+                title: editing.title,
+                action_text: editing.action_text,
+                target_path: editing.target_path,
+                position: editing.position,
+                active: editing.active,
+              }
+            : { target_path: "/plans", position: (q.data?.length || 0) + 1, active: true }}
+        >
           <Form.Item label="Tiêu đề" name="title" rules={[{ required: true, whitespace: true, message: "Nhập tiêu đề banner." }, { max: 100, message: "Tối đa 100 ký tự." }]}>
             <Input placeholder="Ví dụ: Đến lúc chăm xe?" maxLength={100} />
           </Form.Item>
@@ -242,10 +252,16 @@ export default function BannersPage() {
             <Input placeholder="Ví dụ: Xem lịch bảo dưỡng" maxLength={60} />
           </Form.Item>
           <Form.Item label="Khi chạm vào, mở" name="target_path" rules={[{ required: true }]}>
-            <Select options={targets} />
+            <select className="native-form-select">
+              {targets.map((target) => (
+                <option key={target.value} value={target.value}>
+                  {target.label}
+                </option>
+              ))}
+            </select>
           </Form.Item>
           <Form.Item label="Ảnh banner" required>
-            <Space direction="vertical" size="middle">
+            <Space orientation="vertical" size="middle">
               <Space wrap>
                 {preview.map((src, index) => (
                   <Image key={index} src={src} alt={`Ảnh ${index + 1}`} width={110} height={72} style={{ objectFit: "cover" }} />
@@ -285,7 +301,7 @@ export default function BannersPage() {
             </Form.Item>
           </Space>
         </Form>
-      </Modal>
+      </Modal>}
     </>
   );
 }

@@ -52,12 +52,13 @@ export async function POST(request: NextRequest, { params }: Context) {
     return json({ message: "Dữ liệu nhập không hợp lệ." }, 400);
   }
   const token = await sessionToken();
-  if (["logout", "password", "profile"].includes(action) && !token)
+  if (["password", "profile"].includes(action) && !token)
     return json({ message: "Vui lòng đăng nhập lại." }, 401);
   try {
     if (action === "logout") {
       try {
-        await nest("/auth/logout", token, "POST", {});
+        if (token)
+          await nest("/auth/logout", token, "POST", {}, AbortSignal.timeout(3000));
       } catch {
         /* End this browser session even when backend is unavailable. */
       }

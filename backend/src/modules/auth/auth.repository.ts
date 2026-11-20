@@ -18,7 +18,7 @@ export class AuthRepository {
   }
   insertSession(params: any[] = [], client?: PoolClient) {
     return (client || this.database).query(
-      "INSERT INTO sessions VALUES($1,$2,now()+interval '7 days')",
+      "INSERT INTO sessions(id,user_id,expires_at,refresh_token_hash) VALUES($1,$2,CASE WHEN $3::boolean THEN 'infinity'::timestamptz ELSE now()+interval '7 days' END,$4)",
       params,
     );
   }

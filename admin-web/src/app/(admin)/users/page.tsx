@@ -10,7 +10,6 @@ import {
   Form,
   Input,
   Modal,
-  Popconfirm,
   Select,
   Switch,
   Table,
@@ -51,8 +50,9 @@ export default function UsersPage() {
     [busy, B] = useState(false),
     [error, F] = useState("");
   const [form] = Form.useForm<UserValues>();
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
   const self = useData<AdminUser>("auth/session");
+  const editingSelf = !!editing && editing.id === self.data?.id;
   const q = useData<Page<AdminUser>>(
       "admin/users?" + query({ q: term, active, role, page, page_size: size }),
     ),
@@ -83,6 +83,48 @@ export default function UsersPage() {
     } catch (e) {
       message.error((e as Error).message);
     }
+  }
+  function confirmDelete(user: AdminUser) {
+    modal.confirm({
+      title: "Xóa người dùng?",
+      content: (
+        <>
+          <p>{user.email}</p>
+          Chỉ xóa được tài khoản chưa có dữ liệu. Nếu tài khoản đã có xe hoặc lịch sử, hãy dùng nút Khóa.
+        </>
+      ),
+      okText: "Xóa",
+      cancelText: "Hủy",
+      okButtonProps: { danger: true },
+      centered: true,
+      onOk: async () => {
+        try {
+          await api("admin/users/" + user.id, "DELETE");
+          message.success("Đã xóa người dùng.");
+          if (page > 1 && q.data?.items.length === 1) P(page - 1);
+          else q.reload();
+        } catch (error) {
+          message.error((error as Error).message);
+        }
+      },
+    });
+  }
+  function confirmAccessChange(user: AdminUser) {
+    modal.confirm({
+      title: user.active ? "Khóa tài khoản này?" : "Mở khóa tài khoản này?",
+      content: (
+        <>
+          <p>{user.email}</p>
+          {user.active
+            ? "Các phiên đăng nhập hiện tại sẽ kết thúc."
+            : "Người dùng có thể đăng nhập lại sau khi mở khóa."}
+        </>
+      ),
+      okText: "Xác nhận",
+      cancelText: "Hủy",
+      centered: true,
+      onOk: () => change(user, { active: !user.active }),
+    });
   }
   return (
     <>
@@ -255,54 +297,21 @@ export default function UsersPage() {
                       onClick={() => open(u)}
                     />
                   </Tooltip>
-                  <Popconfirm
-                    title={
-                      u.active
-                        ? "Khóa tài khoản này?"
-                        : "Mở khóa tài khoản này?"
-                    }
-                    description={
-                      u.active
-                        ? "Các phiên đăng nhập hiện tại sẽ kết thúc."
-                        : "Người dùng có thể đăng nhập lại sau khi mở khóa."
-                    }
-                    onConfirm={() => change(u, { active: !u.active })}
+                  <Button
+                    type="text"
                     disabled={u.id === self.data?.id}
-                    okText="Xác nhận"
-                    cancelText="Hủy"
-                  >
-                    <Button
-                      type="text"
-                      disabled={u.id === self.data?.id}
-                      aria-label={(u.active ? "Khóa " : "Mở khóa ") + u.email}
-                      icon={u.active ? <LockOutlined /> : <UnlockOutlined />}
-                    />
-                  </Popconfirm>
-                  <Popconfirm
-                    title="Xóa người dùng?"
-                    description="Chỉ xóa tài khoản chưa có xe hoặc lịch sử. Tài khoản có dữ liệu cần dùng Khóa."
-                    okText="Xóa"
-                    cancelText="Hủy"
-                    okButtonProps={{ danger: true }}
-                    onConfirm={async () => {
-                      try {
-                        await api("admin/users/" + u.id, "DELETE");
-                        message.success("Đã xóa người dùng.");
-                        q.reload();
-                      } catch (e) {
-                        message.error((e as Error).message);
-                      }
-                    }}
+                    aria-label={(u.active ? "Khóa " : "Mở khóa ") + u.email}
+                    icon={u.active ? <LockOutlined /> : <UnlockOutlined />}
+                    onClick={() => confirmAccessChange(u)}
+                  />
+                  <Button
+                    type="text"
+                    danger
                     disabled={u.id === self.data?.id}
-                  >
-                    <Button
-                      type="text"
-                      danger
-                      disabled={u.id === self.data?.id}
-                      aria-label={"Xóa " + u.email}
-                      icon={<DeleteOutlined />}
-                    />
-                  </Popconfirm>
+                    aria-label={"Xóa " + u.email}
+                    icon={<DeleteOutlined />}
+                    onClick={() => confirmDelete(u)}
+                  />
                 </div>
               ),
             },
@@ -407,13 +416,10 @@ export default function UsersPage() {
           )}
           <div className="form-two-columns">
             <Form.Item name="role" label="Vai trò" rules={[{ required: true }]}>
-              <Select
-                disabled={editing?.id === self.data?.id}
-                options={[
-                  { label: "Người dùng cá nhân", value: "user" },
-                  { label: "Quản trị viên", value: "admin" },
-                ]}
-              />
+              <select className="native-form-select" disabled={editingSelf}>
+                <option value="user">Người dùng cá nhân</option>
+                <option value="admin">Quản trị viên</option>
+              </select>
             </Form.Item>
             <Form.Item
               name="active"
@@ -421,7 +427,7 @@ export default function UsersPage() {
               valuePropName="checked"
             >
               <Switch
-                disabled={editing?.id === self.data?.id}
+                disabled={editingSelf}
                 checkedChildren="Bật"
                 unCheckedChildren="Tắt"
               />

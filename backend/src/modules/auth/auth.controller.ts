@@ -43,6 +43,13 @@ export class AuthController {
   ) {
     return this.service.logout(req);
   }
+  @Post("refresh")
+  refresh(
+    @Body() body: { refreshToken?: string },
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.service.refresh(body, req);
+  }
   @Get("me")
   me(
     @Req()

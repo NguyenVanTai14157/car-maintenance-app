@@ -42,12 +42,18 @@ export function useData<T>(path: string | null) {
   useEffect(() => {
     if (!path) return;
     const controller = new AbortController();
-    api<T>(path, "GET", undefined, controller.signal)
-      .then((data) => setState({ key: path, data }))
-      .catch((e) => {
-        if (!controller.signal.aborted)
-          setState({ key: path, error: e.message });
-      });
+    // Let React's development setup/cleanup cycle finish before sending the request.
+    queueMicrotask(() => {
+      if (controller.signal.aborted) return;
+      api<T>(path, "GET", undefined, controller.signal)
+        .then((data) => {
+          if (!controller.signal.aborted) setState({ key: path, data });
+        })
+        .catch((e) => {
+          if (!controller.signal.aborted)
+            setState({ key: path, error: e.message });
+        });
+    });
     return () => controller.abort();
   }, [path, version]);
   useEffect(() => {

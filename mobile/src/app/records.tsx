@@ -42,6 +42,10 @@ function HistoryContent({
     [to, T] = useState(typeof params.to === "string" ? params.to : ""),
     [search, S] = useState(""),
     [withCost, setWithCost] = useState(params.withCost === "1");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const filterCount = [vehicle, category, from, to, search, withCost].filter(
+    Boolean,
+  ).length;
   const list = (q.data || []).filter(
     (r: any) =>
       (!vehicle || r.vehicle_id === vehicle) &&
@@ -62,59 +66,91 @@ function HistoryContent({
           go("/record-edit" + (vehicle ? "?vehicle=" + vehicle : ""))
         }
       />
-      <FilterDropdown
-        label="Chi phí"
-        value={withCost ? "with-cost" : "all"}
-        onChange={(value: string) => setWithCost(value === "with-cost")}
-        options={[
-          { label: "Tất cả lịch sử", value: "all" },
-          { label: "Có phát sinh chi phí", value: "with-cost" },
-        ]}
+      <Button
+        title={
+          filtersOpen
+            ? "Thu gọn bộ lọc"
+            : `Bộ lọc${filterCount ? ` (${filterCount})` : ""}`
+        }
+        secondary
+        onPress={() => setFiltersOpen(!filtersOpen)}
       />
-      <View style={styles.filterRow}>
-        <FilterDropdown
-          label="Theo xe"
-          value={vehicle}
-          onChange={V}
-          options={[
-            { value: 0, label: "Tất cả xe" },
-            ...(vehicles.data || []).map((v: any) => ({
-              value: v.id,
-              label: v.plate || `${v.brand} ${v.model}`,
-            })),
-          ]}
-        />
-        <FilterDropdown
-          label="Theo hạng mục"
-          value={category}
-          onChange={C}
-          options={[
-            { value: 0, label: "Tất cả hạng mục" },
-            ...(cats.data || []).map((item: any) => ({
-              value: item.id,
-              label: item.name,
-            })),
-          ]}
-        />
-      </View>
-      <DateField
-        label="Từ ngày"
-        maximum={to || undefined}
-        value={from}
-        onChange={F}
-      />
-      <DateField
-        label="Đến ngày"
-        minimum={from || undefined}
-        value={to}
-        onChange={T}
-      />
-      <Field
-        label="Tìm nội dung / biển số"
-        placeholder="Ví dụ: thay dầu hoặc 51A12345"
-        value={search}
-        onChange={S}
-      />
+      {withCost && <Body>Đang xem lịch sử có phát sinh chi phí.</Body>}
+      {filtersOpen && (
+        <View style={{ gap: 14 }}>
+          <FilterDropdown
+            label="Chi phí"
+            value={withCost ? "with-cost" : "all"}
+            onChange={(value: string) => setWithCost(value === "with-cost")}
+            options={[
+              { label: "Tất cả lịch sử", value: "all" },
+              { label: "Có phát sinh chi phí", value: "with-cost" },
+            ]}
+          />
+          <View style={styles.filterRow}>
+            <FilterDropdown
+              label="Theo xe"
+              value={vehicle}
+              onChange={V}
+              options={[
+                { value: 0, label: "Tất cả xe" },
+                ...(vehicles.data || []).map((v: any) => ({
+                  value: v.id,
+                  label: v.plate || `${v.brand} ${v.model}`,
+                })),
+              ]}
+            />
+            <FilterDropdown
+              label="Theo hạng mục"
+              value={category}
+              onChange={C}
+              options={[
+                { value: 0, label: "Tất cả hạng mục" },
+                ...(cats.data || []).map((item: any) => ({
+                  value: item.id,
+                  label: item.name,
+                })),
+              ]}
+            />
+          </View>
+          <View style={styles.filterRow}>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <DateField
+                label="Từ ngày"
+                maximum={to || undefined}
+                value={from}
+                onChange={F}
+              />
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <DateField
+                label="Đến ngày"
+                minimum={from || undefined}
+                value={to}
+                onChange={T}
+              />
+            </View>
+          </View>
+          <Field
+            label="Tìm nội dung / biển số"
+            placeholder="Ví dụ: thay dầu hoặc 51A12345"
+            value={search}
+            onChange={S}
+          />
+          <Button
+            title="Xóa bộ lọc"
+            secondary
+            onPress={() => {
+              V(0);
+              C(0);
+              F("");
+              T("");
+              S("");
+              setWithCost(false);
+            }}
+          />
+        </View>
+      )}
       <ErrorText text={q.error} />
       {withCost && q.data && (
         <Card>

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { type ComponentRef, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   Animated,
   type ImageSourcePropType,
@@ -162,26 +162,10 @@ export default function Home() {
   );
 }
 
-const banners = [
-  {
-    title: "Đến lúc chăm xe?",
-    action: "Xem lịch bảo dưỡng",
-    path: "/plans",
-    background: "#174C40",
-    image: require("../../assets/maintenance-banner.jpg"),
-  },
-  {
-    title: "Vừa bảo dưỡng xe?",
-    action: "Ghi lại lần bảo dưỡng",
-    path: "/record-edit",
-    background: "#173B55",
-  },
-] as const;
-
 function HomeBanners() {
   const [width, setWidth] = useState(0),
     [activeIndex, setActiveIndex] = useState(0);
-  const carousel = useRef<ScrollView>(null);
+  const carousel = useRef<ComponentRef<typeof ScrollView>>(null);
   const remote = useData("/banners");
   const slides: {
     id: string;
@@ -201,17 +185,18 @@ function HomeBanners() {
           (path) => ({ uri: API_URL + path }),
         ),
       }))
-    : banners.map((banner) => ({
-        ...banner,
-        id: banner.path,
-        images: "image" in banner ? [banner.image] : [],
-      }));
+    : [];
   const cardWidth = Math.round(width);
 
   useEffect(() => {
-    setActiveIndex(0);
-    carousel.current?.scrollTo({ x: 0, animated: false });
+    const frame = requestAnimationFrame(() => {
+      setActiveIndex(0);
+      carousel.current?.scrollTo({ x: 0, animated: false });
+    });
+    return () => cancelAnimationFrame(frame);
   }, [slides.length, cardWidth]);
+
+  if (!slides.length) return null;
 
   return (
     <View onLayout={({ nativeEvent }) => setWidth(nativeEvent.layout.width)}>
@@ -274,7 +259,7 @@ function BannerPhotos({
 }) {
   const [index, setIndex] = useState(0);
   const [width, setWidth] = useState(0);
-  const progress = useRef(new Animated.Value(0)).current;
+  const [progress] = useState(() => new Animated.Value(0));
   const count = sources.length;
 
   useLayoutEffect(() => {

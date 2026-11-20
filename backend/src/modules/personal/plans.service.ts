@@ -1,7 +1,12 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { fail } from "../../common/validation/input";
 import { PersonalRepository } from "./personal.repository";
-import { planInput, planStatus, nextSuggestion } from "./personal.rules";
+import {
+  planInput,
+  planStatus,
+  nextSuggestion,
+  validatePlanDue,
+} from "./personal.rules";
 @Injectable()
 export class PlansService {
   constructor(
@@ -43,6 +48,7 @@ export class PlansService {
         fail("Xe đã lưu trữ. Hãy khôi phục xe trước khi tạo/sửa lịch.");
       if (!category.active && (!old || old.category_id !== data.category_id))
         fail("Hạng mục đã ngừng sử dụng.");
+      validatePlanDue(data, vehicle.odometer);
       return this.repo.save("plans", uid, id, data, c);
     });
   }
@@ -69,22 +75,17 @@ export class PlansService {
           "Hãy nhập chu kỳ theo tháng hoặc số km cho lần bảo dưỡng này để tạo lịch tiếp theo.",
         );
       const settings = await this.repo.settings(uid, c);
-      return this.repo.save(
-        "plans",
-        uid,
-        null,
-        {
-          vehicle_id: r.vehicle_id,
-          category_id: r.category_id,
-          ...next,
-          remind_days: settings.remind_days,
-          remind_km: settings.remind_km,
-          interval_months: r.interval_months,
-          interval_km: r.interval_km,
-          source_record_id: id,
-        },
-        c,
-      );
+      const data = planInput({
+        vehicle_id: r.vehicle_id,
+        category_id: r.category_id,
+        ...next,
+        remind_days: 0,
+        remind_km: settings.remind_km,
+        interval_months: r.interval_months,
+        interval_km: r.interval_km,
+      });
+      validatePlanDue(data, v.odometer);
+      return this.repo.save("plans", uid, null, { ...data, source_record_id: id }, c);
     });
   }
 }

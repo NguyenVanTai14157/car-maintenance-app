@@ -188,8 +188,18 @@ async function socket(u) {
   };
   await post(a, "/plans", { ...body, due_date: null, due_km: null }, 400);
   await post(a, "/plans", { ...body, due_date: "2026-02-30" }, 400);
+  await post(a, "/plans", { ...body, due_date: shift(-4), remind_days: 7 }, 400);
+  await post(a, "/plans", { ...body, due_date: day, remind_days: 7 }, 400);
+  await post(a, "/plans", { ...body, due_date: shift(4), remind_days: 5 }, 400);
+  await post(a, "/plans", { ...body, due_date: null, remind_days: 1 }, 400);
+  await post(a, "/plans", { ...body, due_date: null, due_km: 9999 }, 400);
   await post(b, "/plans", body, 404);
   const p = await post(a, "/plans", body);
+  assert.equal(p.remind_days, 0);
+  await patch(a, "/plans/" + p.id, { ...body, due_date: day, remind_days: 1 }, 400);
+  await patch(a, "/plans/" + p.id, { ...body, due_date: shift(4), remind_days: 4 });
+  await patch(a, "/plans/" + p.id, body);
+  await patch(a, "/plans/" + p.id, { ...body, due_date: shift(-1) }, 400);
   assert.deepEqual((await get(a, "/plans/" + p.id)).reasons, ["km"]);
   assert.equal((await get(a, "/plans/" + p.id)).status, "due");
   await req(b, "GET", "/plans/" + p.id, undefined, 404);
@@ -291,9 +301,13 @@ async function socket(u) {
   assert.equal((await get(a, "/costs")).total, 100000);
   const dueBoth = await post(a, "/plans", {
     ...body,
-    due_date: shift(-1),
-    due_km: 9999,
+    due_date: day,
   });
+  // Simulate a previously valid plan whose date and mileage have passed.
+  await db.query(
+    "UPDATE plans SET due_date=$1,due_km=$2 WHERE id=$3 AND owner_id=$4",
+    [shift(-1), 9999, dueBoth.id, a.user.id],
+  );
   const both = await get(a, "/plans/" + dueBoth.id);
   assert.equal(both.status, "overdue");
   assert.deepEqual(both.reasons, ["date", "km"]);
@@ -312,7 +326,7 @@ async function socket(u) {
     remind_hour: 9,
   });
   const nBefore = (await get(a, "/notifications")).length;
-  await post(a, "/plans", { ...body, due_date: shift(-2) });
+  await post(a, "/plans", { ...body, due_date: day });
   assert.equal((await get(a, "/notifications")).length, nBefore);
   await patch(
     a,
@@ -354,6 +368,12 @@ async function socket(u) {
   assert.ok(restored.vehicles.every((v) => v.owner_id === b.user.id));
   assert.equal((await get(a, "/records")).length, backup.records.length);
   assert.deepEqual(restored.records[0].images, backup.records[0].images);
+  await patch(a, "/records/" + history.id, {
+    ...history,
+    interval_months: null,
+    interval_km: 1,
+  });
+  await post(a, "/plans/from-record/" + history.id, {}, 400);
   await patch(a, "/records/" + history.id, {
     ...history,
     interval_months: 3,

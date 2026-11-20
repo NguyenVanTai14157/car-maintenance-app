@@ -23,6 +23,7 @@ export class AuthGuard implements CanActivate {
     if (
       [
         "/auth/login",
+        "/auth/refresh",
         "/admin/auth/login",
         "/auth/register",
         "/auth/forgot-password",

@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { AppState } from "react-native";
 import { io, Socket } from "socket.io-client";
-import { API_URL, expireSession, getToken } from "./api";
+import { API_URL, getToken, refreshAccessToken } from "./api";
 type Listener = (resources: string[]) => void;
 const listeners = new Set<Listener>();
 const statusListeners = new Set<() => void>();
@@ -58,10 +58,19 @@ export function startRealtime() {
         event.resources.filter((r): r is string => typeof r === "string"),
       );
   });
-  current.on("session:expired", () => expireSession());
+  const renew = () => {
+    void refreshAccessToken()
+      .then(() => {
+        if (socket !== current) return;
+        current.auth = { token: getToken() };
+        current.disconnect().connect();
+      })
+      .catch(() => {});
+  };
+  current.on("session:expired", renew);
   current.on("connect_error", (error) => {
     status(false);
-    if (error.message === "SESSION_EXPIRED") expireSession();
+    if (error.message === "SESSION_EXPIRED") renew();
   });
   const appState = AppState.addEventListener("change", (state) => {
     if (state === "active") {

@@ -55,14 +55,6 @@ function SettingsForm({ initial, reload }: any) {
         {b.notifications ? (
           <>
             <Field
-              label="Số ngày nhắc trước mặc định"
-              placeholder="Ví dụ: 7"
-              unit="ngày"
-              value={b.remind_days}
-              onChange={(v) => B({ ...b, remind_days: v })}
-              numeric
-            />
-            <Field
               label="Số km nhắc trước mặc định"
               placeholder="Ví dụ: 500"
               unit="km"

@@ -10,7 +10,7 @@ export class SystemLogsController {
   @Sse("events")
   events() {
     return merge(
-      of({ data: ["*"] }),
+      of({ data: [] }),
       adminChanges.pipe(map((resources) => ({ data: resources }))),
       interval(15000).pipe(map(() => ({ data: [] }))),
     ).pipe(takeUntil(timer(45000)));

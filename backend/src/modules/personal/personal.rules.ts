@@ -65,12 +65,30 @@ export function planInput(b: any) {
     category_id: integer(b.category_id, "Hạng mục", 1),
     due_date,
     due_km,
-    remind_days: integer(b.remind_days ?? 7, "Nhắc trước theo ngày", 0, 365),
+    remind_days: optionalInt(b.remind_days, "Nhắc trước theo ngày", 0, 365) ?? 0,
     remind_km: integer(b.remind_km ?? 500, "Nhắc trước theo km", 0, 100000),
     interval_months: optionalInt(b.interval_months, "Chu kỳ tháng", 1, 120),
     interval_km: optionalInt(b.interval_km, "Chu kỳ km", 1, 1000000),
     notes: text(b.notes, "Ghi chú", 2000, false),
   };
+}
+export function validatePlanDue(
+  plan: { due_date: string | null; due_km: number | null; remind_days: number },
+  currentKm: number,
+  currentDay = today(),
+) {
+  if (plan.due_date && plan.due_date < currentDay)
+    fail("Ngày dự kiến bảo dưỡng phải từ hôm nay trở đi.");
+  const daysRemaining = plan.due_date
+    ? (Date.parse(plan.due_date + "T00:00Z") -
+        Date.parse(currentDay + "T00:00Z")) / 86400000
+    : 0;
+  if (plan.remind_days > daysRemaining)
+    fail(plan.due_date
+      ? `Chỉ được nhắc trước tối đa ${Math.min(daysRemaining, 365)} ngày.`
+      : "Cần chọn ngày dự kiến để đặt nhắc trước theo ngày.");
+  if (plan.due_km != null && plan.due_km < currentKm)
+    fail("Số km đến hạn không được thấp hơn số km hiện tại của xe.");
 }
 export function recordInput(b: any) {
   const performed_date = isoDay(b.performed_date)!;

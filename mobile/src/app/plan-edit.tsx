@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { Loading, Select } from "../components/personal";
+import { day, Loading, Select } from "../components/personal";
 import { DateField } from "../components/date-field";
 import { CategorySelect } from "../components/category-select";
 import {
@@ -66,7 +66,7 @@ function PlanForm({
       category_id: activeCats[0]?.id || 0,
       due_date: "",
       due_km: "",
-      remind_days: settings.remind_days,
+      remind_days: "",
       remind_km: settings.remind_km,
       interval_months: "",
       interval_km: "",
@@ -74,10 +74,15 @@ function PlanForm({
     },
   );
   const task = useSubmit();
+  const selectedVehicle = activeVehicles.find((v: any) => v.id === b.vehicle_id);
+  const maxRemindDays = (date: string, today: string) =>
+    Math.max(0, Math.min(365, (Date.parse(date + "T00:00Z") -
+      Date.parse(today + "T00:00Z")) / 86400000));
+  const today = day();
   const examples: Record<string, string> = {
     due_date: "Ví dụ: 2026-12-20",
     due_km: "Ví dụ: 45000",
-    remind_days: "Ví dụ: 7",
+    remind_days: "Nhập số ngày",
     remind_km: "Ví dụ: 500",
     interval_months: "Ví dụ: 6",
     interval_km: "Ví dụ: 5000",
@@ -126,11 +131,13 @@ function PlanForm({
       />
       <DateField
         label="Ngày dự kiến (có thể bỏ trống)"
+        minimum={today}
+        hint="Chọn từ hôm nay trở đi."
         value={b.due_date}
-        onChange={(v) => B({ ...b, due_date: v })}
+        onChange={(v) => B({ ...b, due_date: v, remind_days: v ? b.remind_days : "" })}
       />
-      {field("due_km", "Số km đến hạn (có thể bỏ trống)", true, "km")}
       {field("remind_days", "Nhắc trước bao nhiêu ngày", true, "ngày")}
+      {field("due_km", "Số km đến hạn (có thể bỏ trống)", true, "km")}
       {field("remind_km", "Nhắc trước bao nhiêu km", true, "km")}
       {field("interval_months", "Chu kỳ tháng (không bắt buộc)", true, "tháng")}
       {field("interval_km", "Chu kỳ km (không bắt buộc)", true, "km")}
@@ -145,10 +152,29 @@ function PlanForm({
         disabled={task.busy}
         onPress={() =>
           task.run(async () => {
+            const today = day();
+            if (b.due_date && b.due_date < today)
+              throw Error("Ngày dự kiến bảo dưỡng phải từ hôm nay trở đi.");
+            const remindDays = Number(b.remind_days ?? 0);
+            if (b.due_date) {
+              const max = maxRemindDays(b.due_date, today);
+              if (b.remind_days == null || b.remind_days === "" ||
+                  !Number.isInteger(remindDays) || remindDays < 0 || remindDays > max)
+                throw Error(max === 0
+                  ? "Lịch đến hạn hôm nay. Hãy nhập 0."
+                  : `Nhập số ngày nhắc trước từ 0 đến ${max}.`);
+            } else if (remindDays !== 0) {
+              throw Error("Cần chọn ngày dự kiến để đặt nhắc trước theo ngày.");
+            }
+            const hasDueKm = b.due_km != null && b.due_km !== "";
+            if (!b.due_date && !hasDueKm)
+              throw Error("Cần ngày dự kiến hoặc số km đến hạn.");
+            if (hasDueKm && selectedVehicle && Number(b.due_km) < selectedVehicle.odometer)
+              throw Error("Số km đến hạn không được thấp hơn số km hiện tại của xe.");
             const result = await api(
               "/plans" + (initial ? "/" + initial.id : ""),
               initial ? "PATCH" : "POST",
-              b,
+              { ...b, remind_days: remindDays },
             );
             router.replace(("/plan?id=" + result.id) as any);
           }, "")
